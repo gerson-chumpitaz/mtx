@@ -291,7 +291,7 @@ Lista consolidada de puntos [VERIFICAR] para confirmar con el profesor:
 1. BCG: umbrales de participación relativa y crecimiento, escala del eje X, si la herramienta calcula la participación relativa, y tratamiento de utilidad negativa o cero.
 2. EFI y EFE: diagnóstico en total exactamente 2.5, y restricción de clasificación por tipo de factor.
 3. MPC: cantidad de competidores admitidos, validación de clasificación 1 a 4 y manejo de empates.
-4. PEYEA: definición del vector (segmento o magnitud y ángulo), cuadrante en el eje cero, semántica y rango de las escalas negativas.
+4. PEYEA: definición del vector (segmento o magnitud y ángulo), cuadrante en el eje cero.
 5. MIE: numeración de celdas, asignación de zonas, y huecos entre rangos.
 6. GE: origen, escala y punto de corte de los dos ejes, y listas de estrategias por cuadrante.
 7. Historia 7: navegadores soportados y uso de CDN.
