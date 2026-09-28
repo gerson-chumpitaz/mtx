@@ -164,7 +164,7 @@ Puntos sin definir [VERIFICAR]:
 
 ### Historia 4: PEYEA
 
-Convención de cálculo usada: cada eje es el promedio simple de sus factores. Eje X = ventaja competitiva + fuerza de la industria. Eje Y = estabilidad del entorno + fuerza financiera. Cuadrantes: agresivo (X>0, Y>0), conservador (X<0, Y>0), defensivo (X<0, Y<0), competitivo (X>0, Y<0).
+Convención de cálculo usada: cada eje es el promedio simple de sus factores. Fuerza financiera (FF) y fuerza de la industria (FI) se califican de 1 (peor) a 6 (mejor); ventaja competitiva (VC) y estabilidad del entorno (EE) se califican de −1 (mejor) a −6 (peor). Ninguna de las cuatro variables admite el valor 0, siguiendo la convención de D'Alessio y Rowe. Eje X = ventaja competitiva + fuerza de la industria. Eje Y = estabilidad del entorno + fuerza financiera. Cuadrantes: agresivo (X>0, Y>0), conservador (X<0, Y>0), defensivo (X<0, Y<0), competitivo (X>0, Y<0).
 
 **Prueba 4.1: perfil agresivo**
 
@@ -186,15 +186,14 @@ Convención de cálculo usada: cada eje es el promedio simple de sus factores. E
 
 **Prueba 4.4: perfil competitivo**
 
-- Dado FF = 1, 2, 0; FI = 5, 5, 5; VC = −1, −2; EE = −5, −5, −5
+- Dado FF = 1, 2, 3; FI = 5, 5, 5; VC = −1, −2; EE = −5, −5, −5
 - Cuando el sistema calcula la matriz PEYEA
-- Entonces FF = 1.00, FI = 5.00, VC = −1.50, EE = −5.00, X = 3.50, Y = −4.00 y el cuadrante es competitivo.
+- Entonces FF = 2.00, FI = 5.00, VC = −1.50, EE = −5.00, X = 3.50, Y = −3.00 y el cuadrante es competitivo.
 
 Puntos sin definir [VERIFICAR]:
 
 - Vector: la historia pide "el vector". Se asume que el vector es el segmento del origen a (X, Y). Si el curso exige magnitud y ángulo, para la prueba 4.1 serían √5 = 2.24 y 26.57° (atan2(1, 2)).
 - Cuadrante cuando X = 0 o Y = 0: no está definido por la regla dada.
-- Semántica de las escalas negativas: D'Alessio y Rowe suelen usar −1 (mejor) a −6 (peor) para VC y EE, sin incluir el 0. La regla dada dice de −6 a 0. Las pruebas solo usan el promedio aritmético, así que no dependen de esto, pero la validación de rango sí.
 - Cantidad de factores por eje (las pruebas usan de 2 a 5 factores por eje, sin asumir un número fijo).
 
 ### Historia 5: MIE
