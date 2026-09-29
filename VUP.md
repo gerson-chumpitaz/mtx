@@ -1160,4 +1160,207 @@ Puntos [VERIFICAR] nuevos:
 4. Versiones mínimas de navegadores: el plan usa las versiones actuales de Chrome, Edge y Firefox. La lista de navegadores soportados de la Historia 7 sigue abierta.
 5. Quién y con qué frecuencia ejecuta el plan, y cómo se registran los resultados y los fallos: hoy solo hay la columna "¿Pasó?" y el registro de ejecución.
 
-## Transition (pendiente)
+## Transition
+
+Objetivo de la fase: publicar la aplicación, verificarla en su dirección real, dejar material de apoyo para explicar el código, reunir en una sola lista lo que sigue abierto para llevarlo al profesor y dejar las preguntas de reflexión que pide VUP. Esta fase no cambió `index.html` ni `tests/`.
+
+### 1. Configuración de despliegue
+
+| Dato | Valor |
+|---|---|
+| URL de la aplicación | https://gerson-chumpitaz.github.io/mtx/ |
+| Repositorio | https://github.com/gerson-chumpitaz/mtx, ahora **público** (antes era privado). |
+| Origen de la publicación | Rama `master`, carpeta raíz (`/`). El archivo que se sirve en la raíz es `index.html`. |
+| Tipo de publicación | Por rama (`build_type` = `legacy`): cada `git push` a `master` vuelve a publicar solo. |
+| HTTPS | Forzado por GitHub (`https_enforced` = `true`). |
+
+Pasos exactos que se siguieron, con la cuenta `gerson-chumpitaz` ya autenticada en `gh`:
+
+1. Se revisó la sintaxis vigente con `gh repo edit --help`: cambiar la visibilidad exige `--visibility` junto con `--accept-visibility-change-consequences`.
+2. Antes de cambiarla se comprobó qué se hace público: los cuatro archivos rastreados (`.gitignore`, `VUP.md`, `index.html` y `tests/elaboration1.test.js`) y los 12 commits. Ninguno contiene claves ni tokens. Los commits llevan como autor el correo personal `gersonechumpitazd@gmail.com`, que queda visible en el historial público.
+3. Se hizo público el repositorio:
+
+```bash
+gh repo edit gerson-chumpitaz/mtx --visibility public --accept-visibility-change-consequences
+```
+
+4. Se comprobó en la documentación oficial (docs.github.com, REST API de Pages, "Create a GitHub Pages site") el endpoint vigente: `POST /repos/{owner}/{repo}/pages`, con el cuerpo `build_type` (`legacy` o `workflow`) y `source.branch` (obligatorio) y `source.path` (`/` o `/docs`, por defecto `/`). Una consulta previa al mismo endpoint respondió 404 porque el sitio aún no existía.
+5. Se creó el sitio:
+
+```bash
+gh api --method POST repos/gerson-chumpitaz/mtx/pages -H "Accept: application/vnd.github+json" -f "build_type=legacy" -f "source[branch]=master" -f "source[path]=/"
+```
+
+   La respuesta trajo `html_url` = `https://gerson-chumpitaz.github.io/mtx/`.
+6. Se esperó la publicación consultando cada 15 segundos hasta que el estado pasó de `building` a `built` (algo menos de un minuto):
+
+```bash
+gh api repos/gerson-chumpitaz/mtx/pages/builds/latest
+```
+
+7. Se comprobó que el archivo servido es idéntico al del repositorio: el SHA-256 de la URL y el de `index.html` es `19502baf90bfb6a934290fc35613463907c3c19b22aeae79b2a04ee94f2c4dc9` (1 020 715 bytes).
+
+Para repetir o deshacer: un nuevo `git push origin master` publica de nuevo sin más pasos. Para desactivar el sitio: `gh api --method DELETE repos/gerson-chumpitaz/mtx/pages`. GitHub Pages sirve todo lo que hay en la raíz, así que `VUP.md` y `tests/elaboration1.test.js` también quedan accesibles públicamente en la misma dirección.
+
+### 2. Resultado de la verificación en la URL real
+
+Se abrió https://gerson-chumpitaz.github.io/mtx/ en el navegador integrado de la aplicación (Chromium) y se repitió una verificación básica.
+
+| Comprobación | Resultado |
+|---|---|
+| La página carga | Sí: HTTP 200, HTTPS y contenido idéntico al de `index.html` del repositorio. |
+| Las siete matrices son accesibles | Sí. Recorrido BCG, EFI, EFE, MPC, PEYEA, MIE, GE y otra vez BCG: en cada paso solo se ve la sección elegida y solo su botón queda resaltado. El botón de exportar se deshabilita únicamente en GE. |
+| Prueba 1.1 del BCG | Coincide con Elaboration I: A Estrella 50.00 % y 50.00 %, B Interrogante 30.00 % y 15.00 %, C Vaca lechera 15.00 % y 30.00 %, D Perro 5.00 % y 5.00 %; "Total de ingresos: 1000.00. Total de utilidades: 200.00."; cuatro burbujas dibujadas. |
+| Exportación a Excel | Sí: se generó `Mtx-BCG.xlsx` de 18 350 bytes con las hojas "Datos" y "Resultados", con los mismos valores de la prueba 1.1 (totales 1000 y 200). Se comprobó leyendo el archivo generado con SheetJS, no abriéndolo en Excel. |
+| Persistencia | Tras recargar la URL, los datos de las cuatro divisiones (por ejemplo, Ingresos 500 en la fila 1) y los resultados siguen ahí. |
+| Errores de consola | Ninguno. |
+| Solicitudes de red | Solo la del propio documento (`GET https://gerson-chumpitaz.github.io/mtx/`, HTTP 200, una por carga). Ningún recurso externo ni CDN, y no hay enlaces ni scripts externos en la página. |
+| Diferencias con abrir el archivo con `file://` | Ninguna de comportamiento, porque es el mismo archivo byte a byte. |
+
+Qué no se verificó: la URL solo se probó en el navegador integrado (no en Chrome, Edge ni Firefox por separado ni en un teléfono), los datos se escribieron con eventos simulados y no con el teclado, y la exportación se validó leyendo el archivo generado, no abriéndolo en Excel. Nada apareció roto y no se tocó `index.html`.
+
+Diferencias de entorno a tener presentes (no son fallos):
+
+- Los datos guardados en la URL pública viven en el origen `https://gerson-chumpitaz.github.io`, separado de los que se guardan al abrir el archivo con `file://` y de los de otros navegadores.
+- Ese origen lo comparten otros sitios de Pages de la misma cuenta. La clave que usa Mtx (`mtx.estado`) es específica, pero otro sitio del mismo origen podría leerla o pisarla.
+
+### 3. Resumen del código generado
+
+Este resumen es material de apoyo para poder explicar el código; no reemplaza que se lea. Los números de línea son de `index.html` en el commit `5e35d2e` y cambiarán si el archivo se edita.
+
+**Patrones de diseño**
+
+- **Objetos de responsabilidad única.** Cada componente es un objeto literal (`const Validador = { ... }`) con métodos sobre un solo tema, tal como lo definía el diagrama de clases de Elaboration II. No hay clases con herencia ni instancias múltiples: cada uno existe una sola vez.
+- **Orquestador único.** Solo la Vista llama a los otros cinco componentes; ninguno conoce a otro. Esto se parece al patrón mediador o controlador: reduce las dependencias cruzadas y hace que el orden de las llamadas se lea en un solo lugar.
+- **Funciones puras.** `Validador` y `MotorCalculo` reciben datos y devuelven resultados nuevos sin leer ni escribir en la pantalla. Por eso `tests/elaboration1.test.js` los prueba en Node sin navegador.
+- **Una sola fuente de verdad.** Lo que el usuario escribió vive en la variable `estado`. Los resultados no se guardan: se recalculan cada vez que hacen falta, así que no pueden quedar desactualizados respecto de los datos.
+- **Delegación de eventos y configuración por atributos.** Hay solo tres oyentes en `document` (`click`, `input`, `change`). Cada elemento de la página dice qué hace con atributos `data-accion` (por ejemplo `agregar`, `quitar`, `navegar`, `exportar`) y `data-campo` (la ruta del dato, por ejemplo `divisiones.0.ingresos`), de modo que no hay un oyente por campo.
+- **Avisos como banderas en el resultado.** Los casos límite pendientes de confirmar salen del `MotorCalculo` como una propiedad (`enLimite`, `enEje`) y la Vista decide mostrar el aviso. El cálculo no sabe nada de la pantalla.
+- **Persistencia defensiva.** Cada acceso a `localStorage` va dentro de `try/catch` y el estado guardado se revisa antes de usarse.
+
+No es una arquitectura MVC formal, pero se le parece: el modelo es el `estado` más los motores, la vista son las funciones que dibujan, y el controlador es `Vista.despacharEvento`.
+
+**Cómo está organizado el archivo** (un solo `index.html`):
+
+| Líneas aproximadas | Contenido |
+|---|---|
+| 7 a 58 | Estilos (`<style>`), mínimos y funcionales. |
+| 60 a 72 | Encabezado con el `<nav id="navegacion">` (siete botones) y el botón "Exportar a Excel". |
+| 74 a 130 | Siete secciones `<section class="matriz">`, cada una con cuatro contenedores: `formulario`, `errores`, `resultados` y `grafico`. |
+| 132 a 162 | `<script id="sheetjs">`: la librería SheetJS 0.20.3 completa, sin modificar. |
+| 164 a 1354 | `<script id="app">`: el código de la aplicación. |
+
+Dentro del script de la aplicación, en este orden: constantes y funciones auxiliares (líneas 167 a 213); Validador (215 a 402); MotorCalculo (404 a 566); MotorGraficos (568 a 743); Persistencia (745 a 828); Exportador (830 a 899); Vista con sus funciones auxiliares privadas (901 a 1337); y la rutina de arranque `arrancar()` (1339 a 1354). Existe una función auxiliar, `obtenerPorRuta`, que está definida y no se usa en ninguna parte.
+
+**Los seis componentes**
+
+| Componente | Responsabilidad | Métodos |
+|---|---|---|
+| Vista | Dibuja formularios y resultados, escribe los errores y despacha los eventos del usuario. Es el único que llama a los demás. | `renderFormulario`, `renderResultados`, `mostrarErrores`, `despacharEvento` |
+| Validador | Comprueba los datos antes de calcular: campos vacíos, rangos numéricos y pesos que suman 1. Devuelve `{ valido, errores }` y nunca lanza excepciones. | `validar`, `validarPesos`, `validarRango`, `validarCamposVacios` |
+| MotorCalculo | Aplica las fórmulas y clasificaciones de las siete matrices. GE no está implementada. | `calcularBCG`, `calcularEFI`, `calcularEFE`, `calcularMPC`, `calcularPEYEA`, `ubicarMIE`, `ubicarGE` |
+| MotorGraficos | Dibuja los gráficos en SVG dentro del contenedor `grafico` de la matriz. | `dibujarBCG`, `dibujarPEYEA`, `dibujarMIE`, `dibujarGE` |
+| Persistencia | Guarda y recupera el estado en `localStorage` con la clave `mtx.estado`. | `guardar`, `cargar`, `limpiar` |
+| Exportador | Arma un libro de Excel con SheetJS (hojas "Datos" y "Resultados") y dispara la descarga. | `exportarXLSX` |
+
+**Cómo se comunican.** Por llamadas directas a métodos, pasando objetos simples. La Vista toma un dato del `estado`, se lo entrega al Validador, con lo que este devuelve decide si llama al MotorCalculo, y con el resultado llama a `renderResultados` y al MotorGraficos. Después de cada cambio le entrega el `estado` a Persistencia. El Exportador recibe `(matriz, datos, resultado)` que le arma la Vista. Entre los componentes no hay eventos propios ni variables compartidas; solo la Vista y sus funciones auxiliares usan las variables `estado` y `contextoMatriz` (esta última le dice a `mostrarErrores` sobre qué matriz escribir).
+
+**Cómo se maneja el error de validación.** Es un resultado normal, no una excepción. `Validador.validar` devuelve `{ valido: false, errores: [...] }` con mensajes en texto. La función `evaluarMatriz` traduce eso a uno de cuatro estados: `ok`, `vacia` (todavía no hay ningún dato, y no se muestran errores), `invalida` o `pendiente` (GE). Si es `invalida`, la Vista llama a `mostrarErrores` para escribir la lista en el recuadro rojo de esa matriz, deja el texto "Complete o corrija los datos para ver el resultado.", vacía el gráfico y **no llama** al MotorCalculo. Los datos escritos se guardan igual, sean válidos o no. Los demás errores siguen caminos parecidos: `exportarActiva` captura las excepciones y las muestra en el mismo recuadro, y los fallos de `localStorage` se tragan (`guardar` devuelve `false`, `cargar` devuelve un estado vacío). `ubicarGE` y `dibujarGE` lanzan un error explícito de módulo pendiente, pero la interfaz nunca los llama.
+
+**Cómo seguir el flujo de la historia del BCG**, desde que el usuario escribe hasta que ve el resultado (los nombres son funciones o métodos que se pueden buscar en el archivo):
+
+1. Al abrir la página, `arrancar()` (línea 1344) pide el estado a `Persistencia.cargar()` (811), llama a `Vista.renderFormulario('BCG')` (1248), que arma la tabla de divisiones con `formularioBCG`, y registra los tres oyentes en `document`.
+2. El usuario escribe `500` en Ingresos de la primera fila. El navegador dispara el evento `input`, que llega a `Vista.despacharEvento` (1298).
+3. `despacharEvento` lee `data-campo` (`divisiones.0.ingresos`), deduce la matriz (`BCG`) de la sección donde está el campo y escribe el valor en `estado.datos.BCG` con `establecerPorRuta`.
+4. `Persistencia.guardar(estado)` (803) lo guarda en `localStorage`. Luego se llama a `actualizarMatriz('BCG')` (línea 1175).
+5. `actualizarMatriz` llama a `evaluarMatriz('BCG')` (1149). Si no hay ningún dato escrito devuelve `vacia`. Si lo hay, llama a `Validador.validar('BCG', datos)` (350), que a su vez usa `validarCamposVacios` (391) y `erroresBCG` (219): campos vacíos, ingresos mayores o iguales a 0, participación relativa mayor que 0, crecimiento de -100 o más y suma de ingresos y de utilidades mayores que 0.
+6. Si hay errores, el flujo termina en `mostrarErrores` (1289) como se explicó arriba. Si no, `evaluarMatriz` llama a `MotorCalculo.calcularBCG(divisiones)` (456): convierte los textos a números con `aNumero` (que acepta coma o punto), suma los totales, clasifica cada división con `clasificarBCG` (408) usando los umbrales 1.0 y 10 %, y calcula los porcentajes de ingresos y de utilidades. La Vista agrega al resultado la medida elegida para el tamaño de burbuja.
+7. Con el estado `ok`, la Vista limpia los errores y llama a `renderResultados('BCG', resultado)` (1266), que arma la tabla y los totales con `resultadosBCG`, y a `MotorGraficos.dibujarBCG(resultado)` (594), que construye el SVG: cuadrantes, escala logarítmica en X y lineal en Y, y una burbuja por división con radio proporcional a la raíz de su porcentaje.
+8. El usuario ve la tabla y el gráfico. Cada tecla repite los pasos 2 a 7, y al pulsar "Exportar a Excel" se llama a `exportarActiva` (1227), que repite `evaluarMatriz` y entrega el resultado a `Exportador.exportarXLSX` (887).
+
+Para verlo en acción con las herramientas del navegador (F12): en la pestaña de código fuente, ponga puntos de interrupción en `despacharEvento`, `evaluarMatriz`, `calcularBCG` y `dibujarBCG`, y escriba un valor en el BCG. Para ver el mismo cálculo sin navegador, la prueba 1.1 está en `tests/elaboration1.test.js`.
+
+### 4. Lista consolidada de puntos [VERIFICAR] para llevar al profesor
+
+Es un listado, no una fase de decisiones: ningún punto se resolvió aquí. Solo incluye lo que sigue abierto al 2026-09-29. Se excluyen los puntos que el juez ya cerró: las escalas de PEYEA (1 a 6 y −1 a −6, sin 0), el uso de un CDN (todo va embebido), la librería de Excel (SheetJS), la prueba del Exportador (se cubrió en Construction III), el nombre del archivo, SVG en vez de canvas, la rutina de arranque, el tipo del parámetro `matriz`, la navegación y la ubicación de la librería.
+
+**Inception:** no marcó ningún punto como [VERIFICAR], pero sus riesgos piden confirmar con el profesor: (a) la terminología del modelo PE-BSC (análisis FLOR, ADN de misión y visión) y (b) la fidelidad a la terminología exacta de D'Alessio, que probablemente se usa para calificar. Están fuera del alcance de v1.
+
+**A. Matrices: datos y reglas de cálculo**
+
+| Matriz | Punto abierto | Fase de origen | Criterio provisional implementado |
+|---|---|---|---|
+| BCG | Si la herramienta debe calcular la participación relativa a partir de ventas de competidores o si la escribe el estudiante | Elaboration I | La escribe el estudiante |
+| BCG | Umbrales (participación relativa 1.0 y crecimiento 10 %): fijos, configurables o al estilo D'Alessio (crecimiento centrado en 0 %) | Elaboration I | 1.0 y 10 %, fijos |
+| BCG | Escala del eje X (logarítmica o lineal) y su orientación | Elaboration I | Logarítmica, alta participación a la izquierda |
+| BCG | Valor exactamente en un umbral | Elaboration I | Cuenta como "alto"; aviso en pantalla |
+| BCG | Utilidad negativa o cero: tamaño de la burbuja, porcentaje de utilidades mayor que 100 % o negativo, y rechazo de un conjunto con suma de utilidades cero o negativa (bloquea el caso de pérdidas totales) | Elaboration I, Construction II y III | Burbuja mínima; se rechaza si la suma es 0 o menos |
+| BCG | Rango válido del crecimiento del mercado | Construction II | Mayor o igual a −100 % |
+| EFI y EFE | Diagnóstico cuando el total es exactamente 2.5 | Elaboration I | Fuerte o "aprovecha"; aviso en pantalla |
+| EFI y EFE | Restricción de clasificación por tipo de factor (D'Alessio usa 3 o 4 para fortalezas y 1 o 2 para debilidades) | Elaboration I | 1 a 4 para todos |
+| EFI y EFE | Rechazo de clasificación fuera de 1 a 4 y de peso fuera de 0 a 1 | Elaboration I | Se rechaza |
+| EFI y EFE | Mostrar los totales con más decimales cuando están cerca de un umbral (1.995 se ve como 2.00 pero cuenta como débil) | Construction III | Solo dos decimales |
+| MPC | Cantidad mínima y máxima de competidores | Elaboration I | Mi empresa más al menos un competidor, sin máximo |
+| MPC | Si la clasificación 1 a 4 también se valida | Elaboration I | Se valida |
+| MPC | Manejo de empates | Elaboration I | Comparten posición |
+| MPC, EFI y EFE | Si llevan gráfico además de la tabla (por ejemplo barras en el MPC) | Elaboration II | Solo tabla |
+| PEYEA | Definición del vector: segmento del origen a (X, Y) o magnitud y ángulo | Elaboration I | Solo (X, Y) |
+| PEYEA | Cuadrante cuando X = 0 o Y = 0 | Elaboration I | El 0 cuenta como positivo; aviso en pantalla |
+| PEYEA | Cantidad de factores por eje | Elaboration I | Sin número fijo |
+| PEYEA | Si se aceptan decimales (D'Alessio califica con enteros) | Construction II | Se aceptan |
+| MIE | Numeración de celdas I a IX y asignación de zonas | Elaboration I | Según David y D'Alessio |
+| MIE | Valor entre 1.99 y 2.00 (por ejemplo 1.995) | Elaboration I | Cortes en menos de 2.0 y menos de 3.0 |
+| MIE | Si se permiten ingresar los totales a mano cuando EFI y EFE no están llenos | Elaboration II | No; se calcula solo desde EFI y EFE |
+| GE | Origen de los dos ejes, su escala y el punto de corte | Elaboration I | No implementada |
+| GE | Listas de estrategias por cuadrante (varían entre autores) | Elaboration I | Solo en la especificación, sin código |
+| GE | Firmas de `ubicarGE` y `dibujarGE` | Elaboration II | Provisionales; lanzan error de módulo pendiente |
+| General | Si el nombre de una división, factor o empresa es obligatorio | Construction II | Opcional |
+
+**B. Exportación a Excel**
+
+- Estructura del archivo (hojas, nombre, valores o fórmulas vivas, si incluye una imagen del gráfico). Elaboration II y Construction II. Provisional: dos hojas, solo valores, sin imagen, `Mtx-<SIGLA>.xlsx`.
+- Si se puede exportar con datos incompletos o inválidos. Elaboration II. Provisional: se bloquea.
+- Con qué programa debe validarse el archivo (Excel específicamente u otro). Construction III.
+
+**C. Persistencia y sesión**
+
+- Mensajes de error para una matriz incompleta tras recargar, y aviso al descartar un estado corrupto. Elaboration II. Provisional: una matriz sin datos no muestra errores hasta que se escribe algo, y un estado corrupto se descarta sin aviso.
+- Clave, estructura y versión del formato guardado, y si el estado es por matriz o global. Elaboration II. Provisional: una clave (`mtx.estado`), versión 1, estado global.
+- Si conviene un botón para borrar los datos (hoy solo se puede desde la consola del navegador). Construction III.
+- Qué debe pasar con los datos guardados entre copias del archivo en distintas carpetas. Construction III.
+
+**D. Despliegue y compatibilidad**
+
+- Navegadores y versiones mínimas que el curso debe soportar. Elaboration I, Construction II y III.
+- Si un pedido de `favicon.ico` en `file://` cuenta como solicitud de red. Construction III. Se propone que no, si no es hacia un dominio externo.
+- Nuevo en esta fase: si es aceptable el origen compartido `gerson-chumpitaz.github.io` para los datos guardados, y que el historial público muestre el correo personal del autor de los commits.
+
+**E. Proceso y repositorio**
+
+- Si la carpeta `tests/` se conserva en el repositorio. Construction II.
+- Diseño visual definitivo (hoy son estilos mínimos). Construction II.
+- Quién ejecuta el plan de pruebas manual, con qué frecuencia y cómo se registran los resultados y los fallos. Construction III.
+
+### 5. Reflexión
+
+Preguntas de VUP para responder a mano. No las respondió la IA.
+
+**1. ¿Qué fue lo más importante de la especificación?**
+
+Respuesta:
+
+**2. ¿Qué harías distinto?**
+
+Respuesta:
+
+**3. ¿Qué te sorprendió de cómo la IA implementó los requisitos?**
+
+Respuesta:
+
+**4. ¿Cómo ayudó tener un plan de pruebas claro?**
+
+Respuesta:
+
+**5. ¿Qué agregarías si siguieras desarrollando el proyecto?**
+
+Respuesta:
