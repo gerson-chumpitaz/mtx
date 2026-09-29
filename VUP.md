@@ -916,6 +916,248 @@ Cada uno tiene un comentario en el código que cita el [VERIFICAR] correspondien
 9. Carpeta `tests/`: falta decidir si se conserva en el repositorio o si la verificación debe hacerse fuera de él.
 10. Diseño visual: los estilos son mínimos y funcionales; el diseño visual definitivo sigue sin definirse.
 
-## Construction III (pendiente)
+## Construction III
+
+Objetivo de la fase: dejar un plan de pruebas manual, pensado para que una persona lo siga con el navegador real, el mouse y el teclado. Esta fase no escribe ni modifica código de la aplicación. No cubre GE más allá de confirmar que está pendiente, porque esa historia no tiene lógica.
+
+Estado del plan: ningún caso ha sido ejecutado por una persona, por eso todas las casillas "¿Pasó?" están en blanco. Los textos y números esperados de los bloques 1, 2, 3 y 6 se obtuvieron simulando esos mismos pasos sobre `index.html` con jsdom (un navegador simulado), y los de exportación y persistencia se comprobaron antes en Construction II. Eso no reemplaza la ejecución real, sobre todo en Edge y Firefox y con el archivo descargado de internet, que aún no se han probado.
+
+### 0. Preparación y convenciones
+
+Registro de ejecución (completar antes de empezar):
+
+| Dato | Valor |
+|---|---|
+| Persona que ejecuta | |
+| Fecha | |
+| Equipo y versión de Windows | |
+| Navegador y versión | |
+| Ruta del archivo `index.html` probado | |
+| Resultado global | |
+
+Convenciones:
+
+- **Abrir la aplicación:** con doble clic en `index.html`. Sale en el navegador predeterminado; para probar otro, clic derecho, "Abrir con".
+- **Reinicio de datos (RD):** la aplicación guarda todo en el navegador y no tiene un botón para borrar datos, así que para volver a un estado limpio hay que hacer lo siguiente:
+  1. Pulsar F12 y abrir la pestaña "Consola".
+  2. Escribir a mano (si el navegador pide escribir `allow pasting`, hágalo) `localStorage.removeItem('mtx.estado'); location.reload()` y pulsar Enter.
+  3. Cerrar las herramientas con F12.
+  Salvo que un caso diga lo contrario, cada caso parte de un RD.
+- **Estado limpio:** BCG visible; 2 divisiones en BCG; 2 fortalezas y 2 debilidades en EFI; 2 oportunidades y 2 amenazas en EFE; 2 factores, "Mi empresa" y "Competidor 1" en MPC; 2 factores por eje en PEYEA.
+- **Agregar y quitar filas:** con los botones "+ Agregar división", "+ Agregar fortaleza", "+ Agregar debilidad", "+ Agregar oportunidad", "+ Agregar amenaza", "+ Agregar factor" y "+ Agregar competidor". El botón ✕ quita una fila. En MPC no hay ✕ para "Mi empresa".
+- **Escribir datos:** con la tecla Tab se salta de un campo al siguiente. Los campos numéricos aceptan punto o coma decimal.
+- **Cómo leer los resultados esperados:** los textos entre comillas se comparan tal como aparecen en pantalla. Los números salen con dos decimales. En EFI y EFE la tabla de resultados lista los factores en el orden en que fueron creados (las filas agregadas con "+" quedan al final), por eso conviene escribir el nombre de cada factor.
+- **Gráfico del BCG:** alta participación relativa a la izquierda, alto crecimiento arriba; Estrella arriba a la izquierda, Interrogante arriba a la derecha, Vaca lechera abajo a la izquierda, Perro abajo a la derecha.
+- **Aviso ámbar:** los casos límite muestran un recuadro amarillo con un texto que dice que la regla está pendiente de confirmar. Los errores de validación salen en un recuadro rojo.
+- **¿Pasó?:** marque con una X ☐ Sí o ☐ No. Si marca No, anote qué vio en el margen o en un informe aparte.
+
+### 1. Datos de prueba
+
+Son los mismos números de las pruebas de Elaboration I.
+
+**D1: BCG (prueba 1.1)**, en el orden Nombre, Ingresos, Utilidades, Participación relativa, Crecimiento:
+
+| Fila | Nombre | Ingresos | Utilidades | Part. relativa | Crecimiento |
+|---|---|---|---|---|---|
+| 1 | A | 500 | 100 | 1.80 | 15 |
+| 2 | B | 300 | 30 | 0.40 | 12 |
+| 3 | C | 150 | 60 | 1.50 | 4 |
+| 4 | D | 50 | 10 | 0.30 | 2 |
+
+**D2: EFI (prueba 2.1)**, en el orden Nombre, Peso, Clasificación:
+
+| Grupo | Nombre | Peso | Clasificación |
+|---|---|---|---|
+| Fortaleza | F1 | 0.20 | 4 |
+| Fortaleza | F2 | 0.15 | 4 |
+| Fortaleza | F3 | 0.10 | 3 |
+| Debilidad | D1 | 0.25 | 1 |
+| Debilidad | D2 | 0.20 | 2 |
+| Debilidad | D3 | 0.10 | 1 |
+
+**D3: EFE (prueba 2.2)**, en el orden Nombre, Peso, Clasificación:
+
+| Grupo | Nombre | Peso | Clasificación |
+|---|---|---|---|
+| Oportunidad | O1 | 0.25 | 4 |
+| Oportunidad | O2 | 0.20 | 3 |
+| Oportunidad | O3 | 0.10 | 2 |
+| Amenaza | A1 | 0.25 | 3 |
+| Amenaza | A2 | 0.15 | 2 |
+| Amenaza | A3 | 0.05 | 1 |
+
+**D4: MPC (prueba 3.1)**: cuatro factores y tres empresas. En la primera fila de la tabla, cambie los nombres a "Competidor A" y "Competidor B".
+
+| Factor crítico | Peso | Mi empresa | Competidor A | Competidor B |
+|---|---|---|---|---|
+| Participación de mercado | 0.30 | 3 | 4 | 2 |
+| Competitividad de precios | 0.25 | 2 | 3 | 4 |
+| Calidad del producto | 0.25 | 4 | 3 | 2 |
+| Lealtad del cliente | 0.20 | 3 | 2 | 4 |
+
+**D5: PEYEA (pruebas 4.1 a 4.4)**: valores de cada eje. La cantidad de filas de cada eje es la cantidad de valores.
+
+| Caso | FF (fuerza financiera) | FI (fuerza de la industria) | VC (ventaja competitiva) | EE (estabilidad del entorno) |
+|---|---|---|---|---|
+| 4.1 agresivo | 5, 4, 4, 3 | 4, 5, 3 | −2, −3, −1, −2 | −3, −2, −4, −3, −3 |
+| 4.2 conservador | 5, 5, 5 | 1, 2 | −4, −4 | −2, −1, −3 |
+| 4.3 defensivo | 1, 2 | 1, 1 | −4, −4, −4 | −5, −5 |
+| 4.4 competidor | 1, 2, 3 | 5, 5, 5 | −1, −2 | −5, −5, −5 |
+
+**D6: recetas para obtener un total exacto de EFI o EFE.** La MIE no tiene campos propios: usa los totales de EFI y EFE. Para lograr un total exacto, rellene las cuatro filas del estado limpio en este orden (fila 1 y 2 son fortalezas u oportunidades; fila 3 y 4 son debilidades o amenazas), escribiendo "Peso" y "Clasificación" en cada una:
+
+| Total buscado | Matriz | Fila 1 | Fila 2 | Fila 3 | Fila 4 |
+|---|---|---|---|---|---|
+| 3.20 | EFI | 0.8 y 3 | 0.2 y 4 | 0 y 1 | 0 y 1 |
+| 1.80 | EFI | 0.8 y 2 | 0.2 y 1 | 0 y 1 | 0 y 1 |
+| 1.99 | EFI | 0.99 y 2 | 0.01 y 1 | 0 y 1 | 0 y 1 |
+| 2.00 | EFI | 1 y 2 | 0 y 1 | 0 y 1 | 0 y 1 |
+| 2.99 | EFI | 0.99 y 3 | 0.01 y 2 | 0 y 1 | 0 y 1 |
+| 3.00 | EFI | 1 y 3 | 0 y 1 | 0 y 1 | 0 y 1 |
+| 1.995 | EFI | 0.995 y 2 | 0.005 y 1 | 0 y 1 | 0 y 1 |
+| 3.50 | EFE | 0.5 y 4 | 0.5 y 3 | 0 y 1 | 0 y 1 |
+| 1.50 | EFE | 0.5 y 2 | 0.5 y 1 | 0 y 1 | 0 y 1 |
+
+**PH: prueba de humo** (se usa en los casos de despliegue), partiendo de un RD:
+
+1. BCG con D1: los cuadrantes son A Estrella, B Interrogante, C Vaca lechera y D Perro, y salen "Total de ingresos: 1000.00. Total de utilidades: 200.00."
+2. EFI con D2: sale "Total EFI: 2.45. Diagnóstico: Posición interna débil."
+3. EFE con D3: sale "Total EFE: 2.90. Diagnóstico: La organización aprovecha oportunidades y evita amenazas por encima del promedio."
+4. MIE: sale celda V, "Retener y mantener".
+5. Recargar con F5: los datos y resultados siguen ahí.
+6. Con EFI activo, pulsar "Exportar a Excel": se descarga `Mtx-EFI.xlsx` y se abre con "Total EFI" 2.45.
+
+### 2. Bloque 1: pruebas de Elaboration I implementadas (CP-01 a CP-15)
+
+| N.º | Origen | Precondición | Pasos | Resultado esperado | ¿Pasó? |
+|---|---|---|---|---|---|
+| CP-01 | Prueba 1.1 (BCG) | RD. BCG visible. | 1. Pulse "+ Agregar división" dos veces (4 filas).<br>2. Escriba los datos D1.<br>3. Observe los resultados y el gráfico.<br>4. En "Tamaño de la burbuja según" elija "% de utilidades". | Sin recuadro rojo. Resultados: A Estrella, 50.00 % de ingresos y 50.00 % de utilidades; B Interrogante, 30.00 % y 15.00 %; C Vaca lechera, 15.00 % y 30.00 %; D Perro, 5.00 % y 5.00 %. Texto "Total de ingresos: 1000.00. Total de utilidades: 200.00." Gráfico: A (verde) en el cuadrante superior izquierdo "Estrella", B (amarillo) arriba a la derecha "Interrogante", C (azul) abajo a la izquierda "Vaca lechera", D (rojo) abajo a la derecha "Perro"; con % de ingresos las burbujas van de mayor a menor A, B, C, D. Con % de utilidades la leyenda dice "Tamaño de la burbuja: % de utilidades" y el orden es A, C, B, D (C es mayor que B). | ☐ Sí<br>☐ No |
+| CP-02 | Prueba 2.1 (EFI) | RD. | 1. Vaya a EFI.<br>2. Pulse "+ Agregar fortaleza" y "+ Agregar debilidad" una vez cada uno (3 y 3).<br>3. Escriba los datos D2. | Sin recuadro rojo ni ámbar. Suma de pesos 1.00. Ponderados: F1 0.80, F2 0.60, F3 0.30, D1 0.25, D2 0.40, D3 0.10. Fila de total con 1.00 en Peso y 2.45 en Ponderado. Texto "Total EFI: 2.45. Diagnóstico: Posición interna débil." Sin gráfico. | ☐ Sí<br>☐ No |
+| CP-03 | Prueba 2.2 (EFE) | RD. | 1. Vaya a EFE.<br>2. Pulse "+ Agregar oportunidad" y "+ Agregar amenaza" una vez cada uno (3 y 3).<br>3. Escriba los datos D3. | Sin recuadro rojo ni ámbar. Suma de pesos 1.00. Ponderados: O1 1.00, O2 0.60, O3 0.20, A1 0.75, A2 0.30, A3 0.05. Total 2.90. Texto "Total EFE: 2.90. Diagnóstico: La organización aprovecha oportunidades y evita amenazas por encima del promedio." Sin gráfico. | ☐ Sí<br>☐ No |
+| CP-04 | Prueba 2.3 (EFI, pesos que no suman 1) | Datos de CP-02 cargados en EFI. | 1. En EFI, cambie el peso de D3 de 0.10 a 0.05.<br>2. Observe.<br>3. Vuelva a escribir 0.10. | Con 0.05: recuadro rojo con "La suma de los pesos es 0.95 y debe ser 1.00.", desaparecen la tabla de resultados, el total y el diagnóstico, y en su lugar dice "Complete o corrija los datos para ver el resultado." Con 0.10: el error desaparece y vuelve "Total EFI: 2.45. Diagnóstico: Posición interna débil." | ☐ Sí<br>☐ No |
+| CP-05 | Prueba 2.4 (tolerancia en pesos 0.6, 0.3, 0.1) | RD. | 1. Vaya a EFE.<br>2. Pulse ✕ en la segunda amenaza (quedan 3 filas: 2 oportunidades y 1 amenaza).<br>3. Escriba peso y clasificación: 0.6 y 4; 0.3 y 3; 0.1 y 2. | Sin recuadro rojo (la suma 0.6 + 0.3 + 0.1 se acepta como 1). Suma de pesos 1.00. Ponderados 2.40, 0.90 y 0.20. Texto "Total EFE: 3.50. Diagnóstico: La organización aprovecha oportunidades y evita amenazas por encima del promedio." | ☐ Sí<br>☐ No |
+| CP-06 | Prueba 3.1 (MPC) | RD. | 1. Vaya a MPC.<br>2. Pulse "+ Agregar factor" dos veces (4 factores) y "+ Agregar competidor" una vez (3 empresas).<br>3. Escriba los datos D4 (incluidos los nombres de factores y de empresas). | Sin recuadro rojo. Total: peso 1.00; Mi empresa 3.00; Competidor A 3.10; Competidor B 2.90. Ponderados de Mi empresa 0.90, 0.50, 1.00, 0.60; de A 1.20, 0.75, 0.75, 0.40; de B 0.60, 1.00, 0.50, 0.80. Texto "Mi empresa queda en la posición 2 de 3." Ranking: 1.º Competidor A 3.10, 2.º Mi empresa 3.00, 3.º Competidor B 2.90. Sin gráfico. | ☐ Sí<br>☐ No |
+| CP-07 | Prueba 3.2 (MPC, pesos compartidos) | Datos de CP-06 cargados en MPC. | 1. Cambie los cuatro pesos a 0.10, 0.50, 0.20 y 0.20 (solo en la columna Peso). | Los tres totales se recalculan sin tocar nada más: Mi empresa 2.70, Competidor A 2.90, Competidor B 3.40. Texto "Mi empresa queda en la posición 3 de 3." Ranking: 1.º Competidor B 3.40, 2.º Competidor A 2.90, 3.º Mi empresa 2.70. | ☐ Sí<br>☐ No |
+| CP-08 | Prueba 4.1 (PEYEA agresivo) | RD. | 1. Vaya a PEYEA.<br>2. Agregue filas hasta tener FF 4, FI 3, VC 4 y EE 5.<br>3. Escriba los valores de D5, fila 4.1. | Sin recuadro rojo ni ámbar. Promedios: FF 4.00, FI 4.00, VC -2.00, EE -3.00. Texto "X = VC + FI = 2.00. Y = EE + FF = 1.00. Vector: (2.00, 1.00)." y "Cuadrante: agresivo." Gráfico: flecha desde el origen hasta el punto (2.00, 1.00) en el cuadrante superior derecho "Agresivo". | ☐ Sí<br>☐ No |
+| CP-09 | Prueba 4.2 (PEYEA conservador) | RD. | 1. En PEYEA, agregue o quite filas hasta tener FF 3, FI 2, VC 2 y EE 3.<br>2. Escriba los valores de D5, fila 4.2. | Promedios: FF 5.00, FI 1.50, VC -4.00, EE -2.00. "X = VC + FI = -2.50. Y = EE + FF = 3.00. Vector: (-2.50, 3.00)." "Cuadrante: conservador." Punto en el cuadrante superior izquierdo. | ☐ Sí<br>☐ No |
+| CP-10 | Prueba 4.3 (PEYEA defensivo) | RD. | 1. En PEYEA, agregue o quite filas hasta tener FF 2, FI 2, VC 3 y EE 2.<br>2. Escriba los valores de D5, fila 4.3. | Promedios: FF 1.50, FI 1.00, VC -4.00, EE -5.00. "X = VC + FI = -3.00. Y = EE + FF = -3.50. Vector: (-3.00, -3.50)." "Cuadrante: defensivo." Punto en el cuadrante inferior izquierdo. | ☐ Sí<br>☐ No |
+| CP-11 | Prueba 4.4 (PEYEA competitivo, versión corregida) | RD. | 1. En PEYEA, agregue o quite filas hasta tener FF 3, FI 3, VC 2 y EE 3.<br>2. Escriba los valores de D5, fila 4.4. | Promedios: FF 2.00, FI 5.00, VC -1.50, EE -5.00. "X = VC + FI = 3.50. Y = EE + FF = -3.00. Vector: (3.50, -3.00)." "Cuadrante: competitivo." Punto en el cuadrante inferior derecho. | ☐ Sí<br>☐ No |
+| CP-12 | Prueba 5.1 (MIE con los totales de 2.1 y 2.2) | EFI con D2 y EFE con D3 cargados (CP-02 y CP-03). | 1. Pulse "MIE". | Sin recuadro rojo. Datos: "Total EFI" 2.45 (promedio), "Total EFE" 2.90 (promedio), "Celda" V, "Zona" Retener y mantener. Texto "Celda V: retener y mantener." Gráfico: cuadrícula de nueve celdas con la celda V (centro, amarilla) resaltada y un círculo "Ud." en ella. | ☐ Sí<br>☐ No |
+| CP-13 | Prueba 5.2 (MIE esquina de crecimiento) | RD. | 1. En EFI escriba la receta D6 de 3.20.<br>2. En EFE escriba la receta D6 de 3.50.<br>3. Pulse "MIE". | Total EFI 3.20 (fuerte), Total EFE 3.50 (fuerte), celda I, zona "Crecer y construir". Celda I (arriba a la izquierda, verde) resaltada. | ☐ Sí<br>☐ No |
+| CP-14 | Prueba 5.3 (MIE esquina de cosecha) | RD. | 1. En EFI escriba la receta D6 de 1.80.<br>2. En EFE escriba la receta D6 de 1.50.<br>3. Pulse "MIE". | Total EFI 1.80 (débil), Total EFE 1.50 (débil), celda IX, zona "Cosechar o desinvertir". Celda IX (abajo a la derecha, roja) resaltada. | ☐ Sí<br>☐ No |
+| CP-15 | Prueba 5.4 (MIE en los límites de rango) | RD. En EFE la receta de 3.50 escrita. | 1. Repita cuatro veces: en EFI escriba la receta D6 de 1.99, luego 2.00, luego 2.99 y luego 3.00.<br>2. Después de cada una, pulse "MIE" y anote celda y zona. | 1.99: "(débil)", celda III, "Retener y mantener". 2.00: "(promedio)", celda II, "Crecer y construir". 2.99: "(promedio)", celda II, "Crecer y construir". 3.00: "(fuerte)", celda I, "Crecer y construir". En los cuatro, Total EFE 3.50 (fuerte). | ☐ Sí<br>☐ No |
+
+### 3. Bloque 2: criterios provisionales implementados en Construction II (CP-16 a CP-30)
+
+En estos casos el sistema debe aplicar el criterio documentado en la sección 4 de Construction II y mostrar el aviso correspondiente. Los avisos ámbar dicen que la regla está pendiente de confirmar con el curso: es el comportamiento esperado.
+
+| N.º | Origen | Precondición | Pasos | Resultado esperado | ¿Pasó? |
+|---|---|---|---|---|---|
+| CP-16 | EFI con total exactamente 2.5 | RD. | 1. Vaya a EFI.<br>2. Escriba peso y clasificación en las cuatro filas: 0.25 y 3; 0.25 y 3; 0.25 y 2; 0.25 y 2. | Sin recuadro rojo. Ponderados 0.75, 0.75, 0.50, 0.50. "Total EFI: 2.50. Diagnóstico: Posición interna fuerte." Recuadro ámbar: "El total es exactamente 2.5. La regla del curso para este caso está pendiente de confirmar." | ☐ Sí<br>☐ No |
+| CP-17 | EFE con total exactamente 2.5 | RD. | 1. Vaya a EFE.<br>2. Escriba peso y clasificación en las cuatro filas: 0.25 y 3; 0.25 y 3; 0.25 y 2; 0.25 y 2. | "Total EFE: 2.50. Diagnóstico: La organización aprovecha oportunidades y evita amenazas por encima del promedio." Recuadro ámbar con el mismo texto que en CP-16. | ☐ Sí<br>☐ No |
+| CP-18 | BCG con valor exactamente en el umbral | RD. | 1. En BCG, deje los nombres vacíos y escriba: fila 1 con 100, 20, 1, 10; fila 2 con 100, 20, 0.5, 5.<br>2. En la fila 1, cambie a participación 0.99 y crecimiento 10.<br>3. Cambie a participación 1 y crecimiento 9.99.<br>4. Cambie a participación 1.01 y crecimiento 10.01. | Paso 1: "División 1" Estrella y "División 2" Perro, cada una con 50.00 % y 50.00 %; recuadro ámbar "Alguna división está exactamente en un umbral (participación relativa 1.0 o crecimiento 10 %). Su cuadrante depende de la convención del curso, que está pendiente de confirmar." Paso 2: División 1 Interrogante, con aviso. Paso 3: División 1 Vaca lechera, con aviso. Paso 4: División 1 Estrella, sin aviso. | ☐ Sí<br>☐ No |
+| CP-19 | BCG con suma de utilidades cero | RD. | 1. En BCG, fila 1 con 100, 10, 1.5, 15 y fila 2 con 100, -10, 0.5, 5.<br>2. Cambie la utilidad de la fila 2 a -20. | Recuadro rojo con "La suma de las utilidades debe ser mayor que 0 para calcular su porcentaje." en ambos pasos. No hay tabla ni gráfico; en su lugar dice "Complete o corrija los datos para ver el resultado." | ☐ Sí<br>☐ No |
+| CP-20 | BCG con una utilidad negativa y suma positiva | RD. | 1. En BCG, fila 1 con 100, 50, 1.5, 15 y fila 2 con 100, -10, 0.5, 5.<br>2. En "Tamaño de la burbuja según" elija "% de utilidades". | Sin recuadro rojo. División 1 Estrella con 50.00 % de ingresos y 125.00 % de utilidades; División 2 Perro con 50.00 % y -25.00 %. "Total de ingresos: 200.00. Total de utilidades: 40.00." En el gráfico, la burbuja de División 2 se ve con el tamaño mínimo (muy pequeña) y la de División 1 es grande. | ☐ Sí<br>☐ No |
+| CP-21 | PEYEA con X = 0 y Y = 0 | RD. | 1. En PEYEA, con las dos filas de cada eje: FF 3 y 3; FI 3 y 3; VC -3 y -3; EE -3 y -3. | "X = VC + FI = 0.00. Y = EE + FF = 0.00. Vector: (0.00, 0.00)." "Cuadrante: agresivo." Recuadro ámbar "El vector queda sobre un eje. La asignación de cuadrante en ese caso está pendiente de confirmar con el curso." En el gráfico solo se ve el punto en el origen, sin flecha. | ☐ Sí<br>☐ No |
+| CP-22 | PEYEA con X = 0 y Y negativo | RD. | 1. En PEYEA, con las dos filas de cada eje: FF 1 y 1; FI 3 y 3; VC -3 y -3; EE -3 y -3. | "X = VC + FI = 0.00. Y = EE + FF = -2.00. Vector: (0.00, -2.00)." "Cuadrante: competitivo." Recuadro ámbar igual que en CP-21. Flecha hacia abajo sobre el eje vertical. | ☐ Sí<br>☐ No |
+| CP-23 | PEYEA con Y = 0 y X negativo | RD. | 1. En PEYEA, con las dos filas de cada eje: FF 3 y 3; FI 1 y 1; VC -4 y -4; EE -3 y -3. | "X = VC + FI = -3.00. Y = EE + FF = 0.00. Vector: (-3.00, 0.00)." "Cuadrante: conservador." Recuadro ámbar igual que en CP-21. Flecha hacia la izquierda sobre el eje horizontal. | ☐ Sí<br>☐ No |
+| CP-24 | MIE con un total como 1.995 | RD. | 1. En EFI escriba la receta D6 de 1.995.<br>2. En EFE escriba la receta D6 de 3.50.<br>3. Observe EFI y luego pulse "MIE". | EFI: "Total EFI: 2.00. Diagnóstico: Posición interna débil." (la pantalla redondea a dos decimales, por eso el 1.995 se ve como 2.00 y los pesos 0.995 y 0.005 se ven como 0.99 y 0.01). MIE: "Total EFI" 2.00 (débil), "Total EFE" 3.50 (fuerte), celda III, "Retener y mantener". Lo que se comprueba es el criterio documentado: 1.995 es menor que 2.0, así que cuenta como débil. Anote en observaciones que la pantalla muestra 2.00 junto a "débil". | ☐ Sí<br>☐ No |
+| CP-25 | MPC con empate | RD. | 1. Vaya a MPC.<br>2. Escriba pesos 0.5 y 0.5 en los dos factores.<br>3. Escriba 3 y 3 para Mi empresa y 3 y 3 para Competidor 1. | Totales 3.00 y 3.00. "Mi empresa queda en la posición 1 de 2." En el ranking, "Mi empresa" y "Competidor 1" aparecen ambas con posición 1 y total 3.00. | ☐ Sí<br>☐ No |
+| CP-26 | MPC sin competidores | Datos de CP-25 cargados. | 1. Pulse ✕ junto a "Competidor 1" (primera fila de la tabla).<br>2. Busque un ✕ junto a "Mi empresa". | Recuadro rojo con "Ingrese mi empresa y al menos un competidor." y sin tabla de resultados ("Complete o corrija los datos para ver el resultado."). No existe ✕ junto a "Mi empresa". | ☐ Sí<br>☐ No |
+| CP-27 | EFI sin restricción de clasificación por tipo de factor | RD. | 1. En EFI escriba peso y clasificación: fortalezas 0.4 y 1, 0.1 y 2; debilidades 0.3 y 1, 0.2 y 2. | Sin recuadro rojo (una fortaleza con clasificación 1 se acepta). Ponderados 0.40, 0.20, 0.30, 0.40. "Total EFI: 1.30. Diagnóstico: Posición interna débil." | ☐ Sí<br>☐ No |
+| CP-28 | Matriz sin ningún dato no muestra errores | RD. | 1. Pulse uno por uno BCG, EFI, EFE, MPC, PEYEA y MIE, sin escribir nada.<br>2. En BCG, escriba solo 100 en Ingresos de la fila 1. | BCG, EFI, EFE, MPC y PEYEA: sin recuadro rojo y con el texto "Complete o corrija los datos para ver el resultado." MIE: recuadro rojo con "Complete la matriz EFI para ubicar la empresa en la MIE." y "Complete la matriz EFE para ubicar la empresa en la MIE." Al escribir el 100 en BCG aparece el recuadro rojo "Hay campos vacíos: complete todos los campos antes de calcular." | ☐ Sí<br>☐ No |
+| CP-29 | Nombres opcionales | RD. | 1. En EFI escriba los datos de CP-27 sin escribir ningún nombre.<br>2. Escriba "Marca" como nombre de la primera fila. | Las filas de resultados se llaman "Factor 1", "Factor 2", "Factor 3" y "Factor 4" (sin recuadro rojo por falta de nombres). Al escribir el nombre, la primera fila pasa a llamarse "Marca". | ☐ Sí<br>☐ No |
+| CP-30 | Coma decimal | RD. | 1. En EFI escriba pesos con coma: 0,20; 0,30; 0,25; 0,25.<br>2. Escriba clasificaciones 4, 3, 2 y 1. | Sin recuadro rojo. En la tabla de resultados los pesos salen con punto (0.20, 0.30, 0.25, 0.25). Ponderados 0.80, 0.90, 0.50, 0.25. "Total EFI: 2.45. Diagnóstico: Posición interna débil." En los campos se sigue viendo lo que se escribió (con coma). | ☐ Sí<br>☐ No |
+
+### 4. Bloque 3: Gran Estrategia (CP-31)
+
+| N.º | Origen | Precondición | Pasos | Resultado esperado | ¿Pasó? |
+|---|---|---|---|---|---|
+| CP-31 | GE pendiente (decisión del juez, Historia 6) | RD. Cualquier otra matriz activa. | 1. Pulse "GE".<br>2. Intente pulsar "Exportar a Excel".<br>3. Recargue con F5 (con GE activa).<br>4. Pulse otra matriz, por ejemplo "BCG". | Paso 1: aparece el mensaje "Módulo pendiente de definir con el curso: la Gran Estrategia (GE) todavía no tiene definidos el origen de sus dos ejes, su escala ni su punto de corte (Historia 6). Por ahora esta sección no calcula ni dibuja nada." No hay formulario, ni tabla, ni gráfico, ni número, ni cuadrante, ni recuadro rojo. Paso 2: el botón "Exportar a Excel" está deshabilitado (atenuado) y no descarga nada. Paso 3: tras recargar sigue en GE con el mismo mensaje y el botón deshabilitado. Paso 4: el botón "Exportar a Excel" vuelve a estar habilitado. | ☐ Sí<br>☐ No |
+
+### 5. Bloque 4: navegación, persistencia y exportación (CP-32 a CP-46)
+
+| N.º | Origen | Precondición | Pasos | Resultado esperado | ¿Pasó? |
+|---|---|---|---|---|---|
+| CP-32 | Navegación: estado inicial | RD. | 1. Observe la página recién cargada. | Hay siete botones: BCG, EFI, EFE, MPC, PEYEA, MIE y GE. El botón BCG está resaltado (fondo azul, texto blanco) y solo se ve la sección BCG con 2 filas. "Exportar a Excel" está habilitado. | ☐ Sí<br>☐ No |
+| CP-33 | Navegación: un botón por matriz | RD. | 1. Pulse en orden BCG, EFI, EFE, MPC, PEYEA, MIE, GE y otra vez BCG.<br>2. Después de cada clic, observe el título de la sección y el botón resaltado. | Después de cada clic solo se ve la sección elegida, con su título (BCG, EFI, etc.), y solo ese botón aparece resaltado. Ninguna otra sección se ve. | ☐ Sí<br>☐ No |
+| CP-34 | Navegación: no se pierden datos | RD. | 1. En BCG escriba 100 en Ingresos de la fila 1.<br>2. Pulse EFI y escriba 0.5 en el peso de la primera fila.<br>3. Vuelva a BCG y luego a EFI. | En BCG sigue el 100 y en EFI sigue el 0.5. | ☐ Sí<br>☐ No |
+| CP-35 | Reutilización: la MIE sigue a EFI y EFE | EFI con D2 y EFE con D3 cargados; MIE mostrada con celda V (CP-12). | 1. Vaya a EFI y cambie la clasificación de F1 de 4 a 1.<br>2. Pulse "MIE".<br>3. Vuelva a EFI, devuelva la clasificación de F1 a 4 y pulse "MIE". | Paso 2: "Total EFI" 1.85 (débil), "Total EFE" 2.90 (promedio), celda VI, zona "Cosechar o desinvertir". Paso 3: vuelve a 2.45 (promedio), celda V, "Retener y mantener". | ☐ Sí<br>☐ No |
+| CP-36 | Persistencia: recargar conserva datos y resultados | RD. | 1. Escriba los datos D1 en BCG, D2 en EFI (3 y 3 filas), D3 en EFE (3 y 3 filas) y D4 en MPC.<br>2. Deje EFI como matriz activa.<br>3. Pulse F5.<br>4. Revise EFI, BCG, EFE, MPC y MIE. | Después de F5 la matriz activa sigue siendo EFI, con los mismos datos y "Total EFI: 2.45. Diagnóstico: Posición interna débil." Al pulsar los demás botones, BCG, EFE y MPC conservan sus datos y sus resultados (los mismos de CP-01, CP-03 y CP-06) y MIE muestra celda V. | ☐ Sí<br>☐ No |
+| CP-37 | Persistencia: datos incompletos | RD. | 1. En BCG escriba 100 en Ingresos de la fila 1 y nada más.<br>2. Pulse F5. | Tras recargar, el 100 sigue en su campo y aparece el recuadro rojo "Hay campos vacíos: complete todos los campos antes de calcular." | ☐ Sí<br>☐ No |
+| CP-38 | Persistencia: cerrar la pestaña y volver | RD. | 1. Escriba en PEYEA los datos de la fila 4.1 de D5 y deje PEYEA activa.<br>2. Cierre la pestaña (y si puede, todo el navegador).<br>3. Vuelva a abrir `index.html` con doble clic. | Se abre en PEYEA (no en BCG) con los mismos valores y los resultados de CP-08: "Vector: (2.00, 1.00)." y "Cuadrante: agresivo." | ☐ Sí<br>☐ No |
+| CP-39 | Persistencia: estado guardado dañado | Datos guardados de cualquier caso. | 1. Pulse F12, abra la Consola y escriba a mano `localStorage.setItem('mtx.estado', '{no es json')` y Enter.<br>2. Pulse F5.<br>3. Escriba un valor en BCG y pulse F5 otra vez. | Paso 2: la página abre en BCG con formularios vacíos, sin recuadro rojo ni mensaje de error en la página y sin errores en la consola. Paso 3: el valor escrito se conserva (la aplicación vuelve a guardar normalmente). | ☐ Sí<br>☐ No |
+| CP-40 | Exportación EFI | EFI con D2 cargado y EFI activo. | 1. Pulse "Exportar a Excel".<br>2. Abra el archivo descargado con Excel, LibreOffice u otro programa de hojas de cálculo. | Se descarga `Mtx-EFI.xlsx` y se abre sin errores. Tiene dos hojas: "Datos" y "Resultados". Datos: encabezado Tipo, Factor, Peso, Clasificación y seis filas (Fortaleza F1 0.2 4, Fortaleza F2 0.15 4, Debilidad D1 0.25 1, Debilidad D2 0.2 2, Fortaleza F3 0.1 3, Debilidad D3 0.1 1, en el orden en que se crearon las filas). Resultados: encabezado Tipo, Factor, Peso, Clasificación, Ponderado; seis filas con ponderados 0.8, 0.6, 0.25, 0.4, 0.3, 0.1; una fila vacía; "Suma de pesos" 1; "Total EFI" 2.45; "Diagnóstico" Posición interna débil. Los números son celdas numéricas. | ☐ Sí<br>☐ No |
+| CP-41 | Exportación BCG | BCG con D1 cargado y BCG activo. | 1. Pulse "Exportar a Excel".<br>2. Abra el archivo. | `Mtx-BCG.xlsx` con hojas "Datos" y "Resultados". Datos: encabezado División, Ingresos, Utilidades, Participación relativa, Crecimiento del mercado (%) y las filas A, B, C, D con los números de D1. Resultados: encabezado División, Cuadrante, % de ingresos, % de utilidades; A Estrella 50 50; B Interrogante 30 15; C Vaca lechera 15 30; D Perro 5 5; una fila vacía; "Total ingresos" 1000; "Total utilidades" 200. | ☐ Sí<br>☐ No |
+| CP-42 | Exportación EFE | EFE con D3 cargado y EFE activo. | 1. Pulse "Exportar a Excel".<br>2. Abra el archivo. | `Mtx-EFE.xlsx` con hojas "Datos" y "Resultados", con la misma estructura que CP-40. En Resultados: ponderados 1, 0.6, 0.75, 0.3, 0.2, 0.05; "Suma de pesos" 1; "Total EFE" 2.9; "Diagnóstico" La organización aprovecha oportunidades y evita amenazas por encima del promedio. | ☐ Sí<br>☐ No |
+| CP-43 | Exportación MPC | MPC con D4 cargado y MPC activo. | 1. Pulse "Exportar a Excel".<br>2. Abra el archivo. | `Mtx-MPC.xlsx`. Datos: encabezado Factor crítico, Peso, Mi empresa, Competidor A, Competidor B y cuatro filas con pesos y clasificaciones de D4. Resultados: encabezado con "(ponderado)" en cada empresa, cuatro filas de ponderados, fila "Total" con 1, 3, 3.1 y 2.9, una fila vacía y el ranking (Empresa, Total, Posición): Competidor A 3.1 1; Mi empresa 3 2; Competidor B 2.9 3. | ☐ Sí<br>☐ No |
+| CP-44 | Exportación PEYEA | PEYEA con la fila 4.1 de D5 cargada y PEYEA activo. | 1. Pulse "Exportar a Excel".<br>2. Abra el archivo. | `Mtx-PEYEA.xlsx`. Datos: encabezado Eje, Factor, Valor y 16 filas (4 de Fuerza financiera (FF), 3 de Fuerza de la industria (FI), 4 de Ventaja competitiva (VC) y 5 de Estabilidad del entorno (EE)) con los valores de D5. Resultados: promedios 4, 4, -2, -3; una fila vacía; "X (VC + FI)" 2; "Y (EE + FF)" 1; "Cuadrante" Agresivo. | ☐ Sí<br>☐ No |
+| CP-45 | Exportación MIE | EFI con D2 y EFE con D3 cargados; MIE activa. | 1. Pulse "Exportar a Excel".<br>2. Abra el archivo. | `Mtx-MIE.xlsx`. Datos: "Total EFI" 2.45 y "Total EFE" 2.9. Resultados: "Nivel EFI" Promedio, "Nivel EFE" Promedio, "Celda" V, "Zona" Retener y mantener. | ☐ Sí<br>☐ No |
+| CP-46 | Exportación sin datos válidos | RD. | 1. Con BCG vacío, pulse "Exportar a Excel".<br>2. Vaya a EFI, escriba los datos de D2 (3 y 3 filas) y ponga 0.05 en el peso de D3; pulse "Exportar a Excel".<br>3. Devuelva el peso a 0.10 y pulse "Exportar a Excel". | Paso 1: no se descarga ningún archivo y aparece el recuadro rojo "Complete los datos antes de exportar." Paso 2: no se descarga ningún archivo y aparece "La suma de los pesos es 0.95 y debe ser 1.00." Paso 3: se descarga `Mtx-EFI.xlsx` y el recuadro rojo desaparece. | ☐ Sí<br>☐ No |
+
+### 6. Bloque 5: despliegue de la Historia 7 (CP-47 a CP-55)
+
+Lista de comprobación de despliegue (LD), que se aplica en todos los casos de este bloque:
+
+- **LD-1:** al abrir, no aparece ninguna ventana de advertencia de macros, de seguridad de Windows (por ejemplo SmartScreen o "Windows protegió su PC") ni solicitud de permisos del navegador (ubicación, notificaciones, cámara, micrófono ni almacenamiento).
+- **LD-2:** se ve la página "Mtx" con los siete botones y la sección BCG.
+- **LD-3:** con F12 y la pestaña "Consola", después de cargar y después de la prueba de humo no hay mensajes de error (en rojo). Los avisos amarillos o mensajes de extensiones del navegador no cuentan, pero anótelos.
+- **LD-4:** con F12 y la pestaña "Red" (Network), tras recargar con F5 solo aparece el propio archivo `index.html`, sin ninguna solicitud a direcciones `http://` o `https://` ni a ningún dominio. Si el navegador pide un ícono (`favicon.ico`), anótelo.
+- **LD-5:** la prueba de humo PH da los resultados esperados en cada paso.
+
+| N.º | Origen | Precondición | Pasos | Resultado esperado | ¿Pasó? |
+|---|---|---|---|---|---|
+| CP-47 | Historia 7: doble clic en Windows con Chrome | Windows con Chrome. Copia local de `index.html` (no descargada de internet). | 1. Haga doble clic en `index.html` con Chrome como navegador predeterminado (o clic derecho, "Abrir con", Chrome).<br>2. Aplique LD-1 a LD-5. | Se cumplen LD-1 a LD-5 en Chrome. | ☐ Sí<br>☐ No |
+| CP-48 | Historia 7: Edge | Windows con Edge. Misma copia local. | 1. Abra `index.html` con Edge.<br>2. Aplique LD-1 a LD-5.<br>3. Compruebe que los datos escritos en Chrome no aparecen (cada navegador guarda por separado). | Se cumplen LD-1 a LD-5 en Edge. En Edge se empieza con un estado limpio, lo cual es esperado. | ☐ Sí<br>☐ No |
+| CP-49 | Historia 7: Firefox | Windows con Firefox. Misma copia local. | 1. Abra `index.html` con Firefox.<br>2. Aplique LD-1 a LD-5 (en Firefox la pestaña de la consola y la de red se llaman "Consola" y "Red").<br>3. Compruebe que los datos de otro navegador no aparecen. | Se cumplen LD-1 a LD-5 en Firefox. El estado empieza limpio, lo cual es esperado. | ☐ Sí<br>☐ No |
+| CP-50 | Historia 7: archivo descargado de internet, Chrome | Copia de `index.html` descargada de internet (por ejemplo, desde el repositorio privado en GitHub con "Download raw file", o recibida por correo o WhatsApp y descargada). | 1. Clic derecho sobre el archivo, "Propiedades": compruebe que al pie aparece el aviso de seguridad "Este archivo proviene de otro equipo..." con la casilla "Desbloquear" (esa es la marca de la web). No la marque.<br>2. Ábralo con Chrome.<br>3. Aplique LD-1 a LD-5. | La marca de la web está presente y se cumplen LD-1 a LD-5 en Chrome sin desbloquear el archivo. | ☐ Sí<br>☐ No |
+| CP-51 | Historia 7: archivo descargado de internet, Edge | La misma copia descargada, con la casilla "Desbloquear" sin marcar. | 1. Ábrala con Edge.<br>2. Aplique LD-1 a LD-5. | Se cumplen LD-1 a LD-5 en Edge. | ☐ Sí<br>☐ No |
+| CP-52 | Historia 7: archivo descargado de internet, Firefox | La misma copia descargada, con la casilla "Desbloquear" sin marcar. | 1. Ábrala con Firefox.<br>2. Aplique LD-1 a LD-5. | Se cumplen LD-1 a LD-5 en Firefox. | ☐ Sí<br>☐ No |
+| CP-53 | Historia 7: sin conexión a internet | Copia local. Desconecte la red (modo avión, o desactive Wi-Fi y Ethernet). | 1. Con la red desconectada, abra `index.html`.<br>2. Ejecute la prueba de humo PH completa, incluida la exportación.<br>3. Aplique LD-3 y LD-4. | Todo funciona igual que con conexión, incluido el paso 6 de PH (se descarga el .xlsx). Ningún error de consola por recursos no encontrados. | ☐ Sí<br>☐ No |
+| CP-54 | Historia 7: equipo sin Office ni Access | Equipo o laboratorio sin Microsoft Office ni Access instalados (si no hay uno disponible, anótelo). | 1. Abra `index.html` con doble clic.<br>2. Ejecute PH.<br>3. Abra el `.xlsx` descargado con otro programa (por ejemplo LibreOffice, Google Sheets o Excel en línea). | La aplicación funciona sin pedir instalar nada. Los pasos 1 a 5 de PH dan lo esperado, y el archivo `Mtx-EFI.xlsx` se abre en el programa alternativo con "Total EFI" 2.45. | ☐ Sí<br>☐ No |
+| CP-55 | Historia 7 e Inception: carpeta movida o en otra ubicación | Copia de la carpeta del proyecto. | 1. Copie la carpeta a cuatro lugares: el Escritorio, una memoria USB, una carpeta sincronizada con OneDrive o SharePoint y una ruta con espacios y acentos (por ejemplo `C:\Prueba de Matrices\Gestión`).<br>2. En cada una, abra `index.html` con doble clic y ejecute PH pasos 1 a 5.<br>3. Anote si los datos guardados en una copia aparecen o no en otra. | En las cuatro ubicaciones la aplicación abre y funciona sin ninguna configuración ni cambio de rutas. Lo que ocurre con los datos guardados entre copias depende del navegador: anótelo. | ☐ Sí<br>☐ No |
+
+### 7. Bloque 6: validación y robustez (CP-56 a CP-60), agregado
+
+No estaba en la lista pedida. Son funciones ya implementadas que los bloques anteriores no ejercitan de forma directa.
+
+| N.º | Origen | Precondición | Pasos | Resultado esperado | ¿Pasó? |
+|---|---|---|---|---|---|
+| CP-56 | PEYEA rechaza el 0 y valores fuera de rango | RD. | 1. En PEYEA escriba en la primera fila: FF 0, FI 7, VC 0, EE -7.<br>2. En la segunda fila de cada eje escriba 3, 3, -3, -3. | Recuadro rojo con exactamente cuatro mensajes: "Fuerza financiera (FF), factor 1: el valor debe estar entre 1 y 6 (el 0 no es válido).", "Fuerza de la industria (FI), factor 1: el valor debe estar entre 1 y 6 (el 0 no es válido).", "Ventaja competitiva (VC), factor 1: el valor debe estar entre -6 y -1 (el 0 no es válido).", "Estabilidad del entorno (EE), factor 1: el valor debe estar entre -6 y -1 (el 0 no es válido)." No hay resultados ni gráfico. | ☐ Sí<br>☐ No |
+| CP-57 | EFI rechaza clasificaciones y pesos inválidos | RD. | 1. En EFI escriba el nombre F1 en la primera fila y estos peso y clasificación: fila 1 0.5 y 5; fila 2 1.2 y 2.5; fila 3 abc y 0; fila 4 0.1 y 2. | Recuadro rojo con cinco mensajes: "Factor "F1": la clasificación debe ser un número entero de 1 a 4.", "Factor 2: la clasificación debe ser un número entero de 1 a 4.", "Factor 3: la clasificación debe ser un número entero de 1 a 4.", "Factor 2: el peso debe ser un número entre 0 y 1." y "Factor 3: el peso debe ser un número entre 0 y 1." No aparece el mensaje de suma de pesos ni resultados. | ☐ Sí<br>☐ No |
+| CP-58 | Los nombres se muestran como texto, no como código | RD. | 1. En EFI escriba como nombre de la primera fila `<b>Marca</b>` y los datos de CP-30 en peso y clasificación. | En la tabla de resultados la fila aparece con el texto literal `<b>Marca</b>` (con los símbolos visibles y sin negrita). No se rompe la página ni aparecen errores en la consola. | ☐ Sí<br>☐ No |
+| CP-59 | Agregar y quitar filas mantiene las clasificaciones alineadas (MPC) | RD. | 1. En MPC pulse "+ Agregar factor" una vez (3 factores).<br>2. Escriba pesos 0.5, 0.3 y 0.2; Mi empresa 4, 3, 2; Competidor 1 con 2, 2, 2.<br>3. Pulse ✕ junto al segundo factor.<br>4. Cambie el peso del último factor a 0.5. | Paso 2: Totales 3.30 (Mi empresa) y 2.00 (Competidor 1); "Mi empresa queda en la posición 1 de 2." Paso 3: recuadro rojo "La suma de los pesos es 0.70 y debe ser 1.00." y sin resultados; las clasificaciones que quedan son las del primer y tercer factor (Mi empresa 4 y 2; Competidor 1 con 2 y 2). Paso 4: totales 3.00 y 2.00; posición 1 de 2. | ☐ Sí<br>☐ No |
+| CP-60 | MIE indica qué matriz completar o corregir | RD. | 1. Pulse "MIE" con EFI y EFE vacíos.<br>2. Escriba los datos D2 en EFI (3 y 3 filas), con EFE aún vacío; pulse "MIE".<br>3. Escriba los datos D3 en EFE (3 y 3 filas) y ponga 0.05 en el peso de D3 en EFI; pulse "MIE".<br>4. Devuelva el peso a 0.10 y pulse "MIE". | Paso 1: dos mensajes rojos "Complete la matriz EFI para ubicar la empresa en la MIE." y "Complete la matriz EFE para ubicar la empresa en la MIE." Paso 2: un solo mensaje "Complete la matriz EFE para ubicar la empresa en la MIE." Paso 3: "Corrija la matriz EFI para ubicar la empresa en la MIE: La suma de los pesos es 0.95 y debe ser 1.00." En los pasos 1 a 3 no hay gráfico. Paso 4: celda V, "Retener y mantener". | ☐ Sí<br>☐ No |
+
+### 8. Resumen de cobertura
+
+| Bloque | Casos | Rango |
+|---|---|---|
+| 1. Pruebas de Elaboration I implementadas | 15 | CP-01 a CP-15 |
+| 2. Criterios provisionales de Construction II | 15 | CP-16 a CP-30 |
+| 3. Gran Estrategia (GE) | 1 | CP-31 |
+| 4. Navegación (4), persistencia (4) y exportación (7) | 15 | CP-32 a CP-46 |
+| 5. Despliegue de la Historia 7 | 9 | CP-47 a CP-55 |
+| 6. Validación y robustez (agregado) | 5 | CP-56 a CP-60 |
+| Total | 60 | CP-01 a CP-60 |
+
+Elaboration I tiene 15 pruebas con lógica implementada (1.1, 2.1 a 2.4, 3.1, 3.2, 4.1 a 4.4 y 5.1 a 5.4), y las 15 están en el bloque 1. La prueba 6.1 (GE) y la 7.1 (uso sin instalación) se cubren en los bloques 3 y 5. No se escribió ningún caso para funcionalidad que no existe: no hay caso de GE con datos, de exportación de GE, de entrada manual de totales en la MIE ni de gráficos de EFI, EFE o MPC.
+
+### Observaciones y puntos nuevos marcados [VERIFICAR] en esta fase
+
+Observaciones al preparar el plan (no se cambió código):
+
+1. La aplicación no tiene un botón para borrar datos (`Persistencia.limpiar` existe, pero no está conectado a la interfaz), así que reiniciar un caso exige usar la consola del navegador. [VERIFICAR] si conviene agregar ese botón.
+2. Cuando un total cae entre 1.995 y 2.00 (CP-24), la pantalla muestra 2.00 pero el sistema lo clasifica como débil, porque redondea solo al mostrar. Es coherente con el criterio documentado, pero puede confundir a un estudiante. [VERIFICAR] si los totales deben mostrarse con más decimales cuando están cerca de un umbral.
+3. Con una utilidad negativa en una división, el porcentaje de utilidades puede pasar de 100 % o ser negativo (CP-20). Es la consecuencia aritmética del criterio provisional del BCG, no un error de cálculo. [VERIFICAR] junto con el punto 2 de Construction II.
+4. Como la MIE no tiene campos propios, las pruebas 5.2, 5.3 y 5.4 necesitan las recetas de la sección D6 (pesos con ceros) para lograr totales exactos. Esto es consecuencia de que Elaboration II dejó abierta la entrada manual de totales.
+
+Puntos [VERIFICAR] nuevos:
+
+1. Alcance del criterio de red (LD-4): si el navegador pide `favicon.ico` para `file://`, hay que decidir si eso cuenta como solicitud de red. Se propone que no, siempre que no sea a un dominio externo.
+2. Datos guardados entre copias del archivo en distintas carpetas (CP-55): depende del navegador y no está definido cuál es el comportamiento deseado.
+3. Programa de hojas de cálculo con el que se valida el `.xlsx` (CP-40 a CP-45, CP-54): el plan pide "Excel u otro". Falta decidir si el curso exige compatibilidad con Excel específicamente.
+4. Versiones mínimas de navegadores: el plan usa las versiones actuales de Chrome, Edge y Firefox. La lista de navegadores soportados de la Historia 7 sigue abierta.
+5. Quién y con qué frecuencia ejecuta el plan, y cómo se registran los resultados y los fallos: hoy solo hay la columna "¿Pasó?" y el registro de ejecución.
 
 ## Transition (pendiente)
