@@ -784,12 +784,12 @@ Correspondencia con Elaboration II:
 
 ### Puntos nuevos marcados [VERIFICAR] en esta fase
 
-1. Nombre del archivo HTML (se propone `index.html`).
+1. Resuelto: el archivo se llama `index.html`.
 2. Mecanismo de navegación entre las siete matrices (pestañas, menú, enlaces con `#`). El esqueleto solo deja un `<nav>` vacío y el atributo `hidden` en cada sección. También queda por decidir qué matriz se muestra al abrir.
-3. Tecnología de dibujo del Motor de Gráficos (SVG o canvas). Los contenedores `grafico` son `<div>` neutrales, para no fijar la decisión todavía.
-4. Punto de arranque al cargar la página: el diagrama de clases de Elaboration II no tiene un método de inicialización, así que se dejó solo un comentario y no se agregó un método a la Vista. Hay que decidir cómo se cablea el escenario 5 (recuperación de sesión) sin cambiar las firmas ya aprobadas.
+3. Resuelto: el Motor de Gráficos usa SVG, no canvas. Los gráficos de Mtx son formas simples en dos dimensiones (cuadrantes, burbujas, un vector, una cuadrícula de nueve celdas), no requieren dibujar grandes volúmenes de píxeles, y SVG permite inspeccionar, probar y dar estilo con CSS a cada elemento como un nodo del DOM, sin una librería adicional. Los contenedores `grafico` siguen siendo `<div>` en el esqueleto; el `<svg>` se agrega dentro de cada uno en Construction II.
+4. Resuelto: se agrega una rutina de arranque fuera de los seis componentes (no un método nuevo en la Vista, para no modificar las firmas ya aprobadas en Elaboration II), que al cargar la página llama a `Persistencia.cargar()` y, con el resultado, a los métodos ya existentes de la Vista para repoblar cada matriz. El código de esta rutina se agrega en Construction II, junto con el resto del comportamiento.
 5. Ubicación exacta de la librería .xlsx dentro del archivo (aquí un comentario entre el cuerpo y el script), pendiente de la elección de la librería de Elaboration II.
-6. Valores de `matriz` que reciben los métodos (`"BCG"`, `"EFI"`, etc.). El esqueleto usa las siglas de Elaboration I en el atributo `data-matriz`, pero el diagrama de clases no fija el tipo del parámetro `matriz`.
+6. Resuelto: `matriz` es siempre un string con una de las siete siglas ya usadas en Elaboration I y en el atributo `data-matriz` del esqueleto (`"BCG"`, `"EFI"`, `"EFE"`, `"MPC"`, `"PEYEA"`, `"MIE"`, `"GE"`), no un objeto ni un código numérico.
 
 ## Construction II (pendiente)
 
