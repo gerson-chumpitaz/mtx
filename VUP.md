@@ -769,7 +769,7 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
       }
     };
 
-    // Construction II: punto de arranque al cargar la página (escenario 5) [VERIFICAR]
+    // Construction II: rutina de arranque (ver decisión del juez en el punto 4 de "Puntos nuevos marcados [VERIFICAR] en esta fase"), no un método de la Vista
   </script>
 </body>
 </html>
