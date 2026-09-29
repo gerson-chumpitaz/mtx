@@ -296,7 +296,273 @@ Lista consolidada de puntos [VERIFICAR] para confirmar con el profesor:
 6. GE: origen, escala y punto de corte de los dos ejes, y listas de estrategias por cuadrante.
 7. Historia 7: navegadores soportados y uso de CDN.
 
-## Elaboration II (pendiente)
+## Elaboration II
+
+Objetivo de la fase: definir la arquitectura del framework (componentes, colaboraciones y diagramas) sin escribir todavía código de la aplicación. Las convenciones de cálculo, clasificación y validación ya fijadas en Elaboration I no se reinterpretan aquí; los componentes solo las aplican. Las decisiones que Inception y Elaboration I no resuelven se marcan [VERIFICAR] y se consolidan al final de esta sección.
+
+Decisión de esta fase que afecta a Elaboration I: el Exportador usa una librería de generación de .xlsx embebida en el propio archivo, sin CDN externa, para funcionar sin conexión a internet. Esto responde al punto [VERIFICAR] de la Historia 7 sobre el uso de CDN. La lista de Elaboration I no se modificó en esta fase.
+
+Principios de la arquitectura:
+
+- La Vista es el único orquestador. Recibe los eventos del usuario y llama a los otros cinco componentes en el orden que corresponda. Ningún otro componente llama a otro, lo que evita dependencias cruzadas.
+- El Validador y el Motor de Cálculo no dependen del navegador ni de la interfaz (entran datos, salen resultados). Por eso las pruebas de Elaboration I se pueden ejecutar contra ellos sin abrir una página.
+- La fuente de verdad es lo que el usuario ingresó (factores, divisiones, calificaciones). Los totales y clasificaciones se recalculan cuando hacen falta, no se guardan como datos independientes, así que nunca quedan desactualizados respecto de los datos.
+- Los datos ingresados se guardan en cada cambio, sean válidos o no, para no perder progreso (requisito no funcional de persistencia). Los resultados solo se calculan y muestran cuando la validación pasa.
+
+### 1. Componentes del framework
+
+| Componente | Responsabilidad |
+|---|---|
+| Vista | Renderiza los formularios de entrada y los resultados de cada matriz, y despacha los eventos del usuario hacia los demás componentes. |
+| Validador | Verifica que los datos ingresados cumplan las reglas de cada matriz antes de calcular (pesos que suman 1, rangos numéricos válidos según la convención de cada matriz, campos no vacíos). |
+| Motor de Cálculo | Contiene la lógica de las siete matrices (BCG, EFI, EFE, MPC, PEYEA, MIE, GE), aplicando exactamente las fórmulas y clasificaciones ya definidas y probadas en Elaboration I. |
+| Motor de Gráficos | Dibuja las representaciones visuales de cada matriz (cuadrantes del BCG, vector del PEYEA, cuadrícula de la MIE, y las demás según corresponda). |
+| Persistencia | Guarda y recupera el estado de la sesión en el almacenamiento local del navegador, para que los datos no se pierdan al recargar. |
+| Exportador | Genera un archivo Excel (.xlsx) descargable con los datos ingresados y los resultados calculados de la matriz activa, usando una librería de generación de Excel embebida en el propio archivo (sin CDN externa), para mantener el funcionamiento sin conexión a internet. |
+
+Relación con las pruebas de Elaboration I:
+
+| Componente | Pruebas de Elaboration I que lo ejercitan |
+|---|---|
+| Validador | 2.3 (pesos suman 0.95), 2.4 (tolerancia de punto flotante) |
+| Motor de Cálculo | 1.1, 2.1, 2.2, 3.1, 3.2, 4.1 a 4.4, 5.1 a 5.4, y 6.1 en lo que se pueda ubicar |
+| Motor de Gráficos | 1.1 (cuadrantes y burbujas), 4.1 a 4.4 (cuadrante del vector), 5.1 a 5.4 (celda de la MIE) |
+| Persistencia | 7.1 (los datos siguen tras recargar) |
+| Vista y Exportador | 7.1 (las siete matrices accesibles); el Exportador no tiene prueba propia en Elaboration I [VERIFICAR] |
+
+### 2. Escenarios (plays)
+
+**Escenario 1: cálculo simple de una matriz nueva (BCG)**
+
+El usuario abre el módulo BCG e ingresa las cuatro divisiones de la prueba 1.1. Con cada cambio, la Vista pide a la Persistencia que guarde el estado. Luego la Vista pasa los datos al Validador, que confirma que cada división tenga ingresos, utilidades, participación relativa y crecimiento numéricos. La Vista pasa los datos válidos al Motor de Cálculo, que devuelve el cuadrante de cada división (A Estrella, B Interrogante, C Vaca lechera, D Perro) y los porcentajes de ingresos y utilidades. La Vista entrega ese resultado al Motor de Gráficos, que dibuja las burbujas en el plano de cuatro cuadrantes, y muestra el resultado al usuario.
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+
+**Escenario 2: una matriz reutiliza resultados de otras (MIE con EFI y EFE)**
+
+El usuario abre el módulo MIE. La Vista pide a la Persistencia los factores guardados de EFI y EFE. El Validador comprueba ambos conjuntos de factores. Si son válidos, el Motor de Cálculo recalcula los totales (2.45 y 2.90 con los datos de las pruebas 2.1 y 2.2) y con ellos ubica la empresa en la celda V, zona "retener y mantener", como en la prueba 5.1. La Vista entrega el resultado al Motor de Gráficos, que dibuja la cuadrícula de nueve celdas con la posición marcada. Si falta EFI o EFE, o alguno no pasa la validación, la Vista indica cuál matriz debe completarse y no calcula la MIE.
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+Decisión tomada: la MIE reutiliza los datos de EFI y EFE y recalcula los totales, no lee totales guardados. [VERIFICAR] si el curso permite ingresar los totales a mano cuando el estudiante no ha llenado EFI y EFE (la Historia 5 dice "a partir de mis totales de EFI y EFE", sin aclarar el origen).
+
+**Escenario 3: rechazo por datos inválidos**
+
+El usuario, en el EFI de la prueba 2.1, cambia el peso de D3 de 0.10 a 0.05. La Vista guarda el estado en la Persistencia y pasa los datos al Validador, que detecta que los pesos suman 0.95 en lugar de 1.00 y devuelve el error. La Vista muestra el error y no muestra total ni diagnóstico. El Motor de Cálculo no se invoca, y el Motor de Gráficos tampoco.
+Componentes: Vista, Persistencia, Validador.
+Este escenario cubre la prueba 2.3. Muestra un patrón distinto al del escenario 1: el flujo se corta en la validación.
+
+**Escenario 4: exportación a Excel de la matriz activa**
+
+Con el EFI válido de la prueba 2.1 abierto, el usuario pulsa "Exportar". La Vista pasa los datos al Validador, que confirma que sean válidos. La Vista pide el resultado al Motor de Cálculo (total 2.45 y diagnóstico "posición interna débil") y entrega al Exportador la matriz, los datos ingresados y el resultado. El Exportador genera el archivo .xlsx con la librería embebida y la Vista dispara la descarga en el navegador. Todo ocurre sin conexión a internet. Si los datos no son válidos, la Vista muestra los errores y no llama al Exportador.
+Componentes: Vista, Validador, Motor de Cálculo, Exportador.
+[VERIFICAR] si se permite exportar datos incompletos o inválidos (solo con los datos ingresados y sin resultados), en lugar de bloquear la exportación.
+
+**Escenario 5: recuperación de una sesión previa al recargar**
+
+El usuario recarga la página o vuelve a abrir el archivo. La Vista pide a la Persistencia el estado guardado. Si existe, la Vista vuelve a llenar los formularios con esos datos y el Validador los revisa. Para cada matriz que pase la validación, el Motor de Cálculo recalcula el resultado y el Motor de Gráficos lo dibuja de nuevo. Las matrices incompletas se muestran con sus datos pero sin resultado. Si el almacenamiento está vacío, corrupto o inaccesible, la Persistencia devuelve un estado vacío y la Vista muestra los formularios en blanco.
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+[VERIFICAR]: si una matriz incompleta tras la recarga muestra mensajes de error de inmediato o solo después de que el usuario la edite; y si el usuario recibe un aviso cuando se descarta un estado corrupto.
+
+Cobertura de componentes por escenario:
+
+| Componente | Esc. 1 | Esc. 2 | Esc. 3 | Esc. 4 | Esc. 5 |
+|---|---|---|---|---|---|
+| Vista | sí | sí | sí | sí | sí |
+| Validador | sí | sí | sí | sí | sí |
+| Motor de Cálculo | sí | sí | no | sí | sí |
+| Motor de Gráficos | sí | sí | no | no | sí |
+| Persistencia | sí | sí | sí | no | sí |
+| Exportador | no | no | no | sí | no |
+
+### 3. Diagramas
+
+**Diagrama de clases**
+
+Los nombres de las clases van sin acentos ni espacios por compatibilidad con Mermaid: `MotorCalculo` es el Motor de Cálculo y `MotorGraficos` es el Motor de Gráficos. La Vista es la única clase que depende de las demás, coherente con el principio de orquestación único.
+
+```mermaid
+classDiagram
+    class Vista {
+        +renderFormulario(matriz)
+        +renderResultados(matriz, resultado)
+        +mostrarErrores(errores)
+        +despacharEvento(evento)
+    }
+    class Validador {
+        +validar(matriz, datos) ResultadoValidacion
+        +validarPesos(factores) bool
+        +validarRango(valor, min, max) bool
+        +validarCamposVacios(datos) bool
+    }
+    class MotorCalculo {
+        +calcularBCG(divisiones) ResultadoBCG
+        +calcularEFI(factores) ResultadoPonderado
+        +calcularEFE(factores) ResultadoPonderado
+        +calcularMPC(factores, empresas) ResultadoMPC
+        +calcularPEYEA(ejes) ResultadoPEYEA
+        +ubicarMIE(totalEFI, totalEFE) ResultadoMIE
+        +ubicarGE(ejes) ResultadoGE
+    }
+    class MotorGraficos {
+        +dibujarBCG(resultado)
+        +dibujarPEYEA(resultado)
+        +dibujarMIE(resultado)
+        +dibujarGE(resultado)
+    }
+    class Persistencia {
+        +guardar(estado)
+        +cargar() Estado
+        +limpiar()
+    }
+    class Exportador {
+        +exportarXLSX(matriz, datos, resultado) ArchivoXLSX
+    }
+    Vista ..> Validador : usa
+    Vista ..> MotorCalculo : usa
+    Vista ..> MotorGraficos : usa
+    Vista ..> Persistencia : usa
+    Vista ..> Exportador : usa
+```
+
+Notas del diagrama de clases:
+
+- Las firmas de `ubicarGE` y `dibujarGE` son provisionales: dependen de las decisiones pendientes de la Historia 6 (origen y escala de los ejes) [VERIFICAR].
+- El Motor de Gráficos solo lista los métodos de las matrices con representación visual definida en Elaboration I (BCG, PEYEA, MIE, GE). [VERIFICAR] si EFI, EFE y MPC llevan también una representación gráfica (por ejemplo barras en el MPC) o solo tabla.
+
+**Diagrama de secuencia del escenario 1: cálculo simple (BCG)**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    participant MC as Motor de Cálculo
+    participant MG as Motor de Gráficos
+    U->>V: ingresa las divisiones del BCG
+    V->>P: guardar(estado)
+    V->>VA: validar(BCG, divisiones)
+    VA-->>V: datos válidos
+    V->>MC: calcularBCG(divisiones)
+    MC-->>V: cuadrantes y porcentajes de burbuja
+    V->>MG: dibujarBCG(resultado)
+    MG-->>V: gráfico de cuatro cuadrantes
+    V-->>U: muestra resultados y gráfico
+```
+
+**Diagrama de secuencia del escenario 2: MIE reutiliza EFI y EFE**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    participant MC as Motor de Cálculo
+    participant MG as Motor de Gráficos
+    U->>V: abre el módulo MIE
+    V->>P: cargar() factores de EFI y EFE
+    P-->>V: factores guardados
+    V->>VA: validar(EFI, factores)
+    VA-->>V: resultado de validación EFI
+    V->>VA: validar(EFE, factores)
+    VA-->>V: resultado de validación EFE
+    alt EFI y EFE válidos
+        V->>MC: calcularEFI(factores)
+        MC-->>V: total EFI
+        V->>MC: calcularEFE(factores)
+        MC-->>V: total EFE
+        V->>MC: ubicarMIE(totalEFI, totalEFE)
+        MC-->>V: celda y zona
+        V->>MG: dibujarMIE(resultado)
+        MG-->>V: cuadrícula con la posición marcada
+        V-->>U: muestra celda y zona
+    else falta EFI o EFE, o alguno es inválido
+        V-->>U: indica cuál matriz debe completar
+    end
+```
+
+**Diagrama de secuencia del escenario 3: rechazo por datos inválidos**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    U->>V: cambia el peso de D3 de 0.10 a 0.05
+    V->>P: guardar(estado)
+    V->>VA: validar(EFI, datos)
+    VA-->>V: error, los pesos suman 0.95 y deben sumar 1.00
+    V-->>U: muestra el error sin total ni diagnóstico
+```
+
+**Diagrama de secuencia del escenario 4: exportación a Excel**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant VA as Validador
+    participant MC as Motor de Cálculo
+    participant E as Exportador
+    U->>V: pulsa Exportar en la matriz activa
+    V->>VA: validar(EFI, datos)
+    alt datos válidos
+        VA-->>V: datos válidos
+        V->>MC: calcularEFI(datos)
+        MC-->>V: total y diagnóstico
+        V->>E: exportarXLSX(EFI, datos, resultado)
+        E-->>V: archivo .xlsx generado con la librería embebida
+        V-->>U: descarga el archivo
+    else datos inválidos
+        VA-->>V: errores
+        V-->>U: muestra los errores, no exporta
+    end
+```
+
+**Diagrama de secuencia del escenario 5: recuperación al recargar**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    participant MC as Motor de Cálculo
+    participant MG as Motor de Gráficos
+    U->>V: recarga la página
+    V->>P: cargar()
+    alt hay estado guardado
+        P-->>V: estado de la sesión previa
+        V->>V: vuelve a llenar los formularios
+        V->>VA: validar(matriz, datos recuperados)
+        VA-->>V: resultado de validación
+        opt la matriz es válida
+            V->>MC: calcular la matriz
+            MC-->>V: resultado
+            V->>MG: dibujar(resultado)
+            MG-->>V: gráfico
+        end
+        V-->>U: formularios con sus datos y resultados de las matrices completas
+    else vacío, corrupto o inaccesible
+        P-->>V: estado vacío
+        V-->>U: formularios en blanco
+    end
+```
+
+### Puntos nuevos marcados [VERIFICAR] en esta fase
+
+1. Estructura del Excel exportado: hojas, nombre del archivo, valores fijos o fórmulas vivas, y si incluye una imagen del gráfico. Solo está decidido que se exporta la matriz activa, con datos ingresados y resultados.
+2. Librería concreta de generación de .xlsx que se embebe: peso, licencia y forma de incluirla en el archivo. Se decide al comienzo de Construction.
+3. Representación gráfica de EFI, EFE y MPC (gráfico o solo tabla), y firmas definitivas de `ubicarGE` y `dibujarGE` (dependen de las decisiones pendientes de la Historia 6).
+4. Origen de los totales en la MIE cuando el estudiante no ha llenado EFI y EFE: si se permite ingresarlos a mano.
+5. Exportación con datos incompletos o inválidos: bloquear (como está descrito) o permitir solo con los datos ingresados.
+6. Recuperación de sesión: mensajes de error para matrices incompletas tras la recarga, aviso al descartar un estado corrupto, y detalles de almacenamiento (clave, estructura, versión del formato guardado, si el estado es por matriz o global).
+7. El Exportador no tiene prueba de aceptación en Elaboration I. Si el juez lo considera necesario, hay que agregar una en una corrección posterior de esa fase.
 
 ## Construction I (pendiente)
 
