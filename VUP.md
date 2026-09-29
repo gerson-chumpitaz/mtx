@@ -270,7 +270,7 @@ Esta historia es un criterio de aceptación de despliegue, no de cálculo, y por
 Puntos sin definir [VERIFICAR]:
 
 - Navegadores y versiones mínimas que el curso debe soportar.
-- Si se permite cargar librerías desde un CDN (lo que exigiría internet) o todo debe ir en el mismo archivo. El requisito "abre haciendo doble clic, sin instalación" sugiere lo segundo, pero no lo dice.
+- Resuelto en Elaboration II: todo el código, incluida cualquier librería como la del Exportador, va embebido en el mismo archivo, sin depender de un CDN, para que funcione sin conexión a internet.
 
 ### Resumen de la fase
 
@@ -562,7 +562,7 @@ sequenceDiagram
 4. Origen de los totales en la MIE cuando el estudiante no ha llenado EFI y EFE: si se permite ingresarlos a mano.
 5. Exportación con datos incompletos o inválidos: bloquear (como está descrito) o permitir solo con los datos ingresados.
 6. Recuperación de sesión: mensajes de error para matrices incompletas tras la recarga, aviso al descartar un estado corrupto, y detalles de almacenamiento (clave, estructura, versión del formato guardado, si el estado es por matriz o global).
-7. El Exportador no tiene prueba de aceptación en Elaboration I. Si el juez lo considera necesario, hay que agregar una en una corrección posterior de esa fase.
+7. El Exportador no tiene prueba de aceptación en Elaboration I. Decisión del juez: no se agrega ahora. Se define un caso de prueba concreto en el plan de pruebas de Construction III, cuando ya exista una implementación real que genere el archivo .xlsx.
 
 ## Construction I (pendiente)
 
