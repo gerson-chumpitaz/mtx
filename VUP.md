@@ -564,7 +564,232 @@ sequenceDiagram
 6. Recuperación de sesión: mensajes de error para matrices incompletas tras la recarga, aviso al descartar un estado corrupto, y detalles de almacenamiento (clave, estructura, versión del formato guardado, si el estado es por matriz o global).
 7. El Exportador no tiene prueba de aceptación en Elaboration I. Decisión del juez: no se agrega ahora. Se define un caso de prueba concreto en el plan de pruebas de Construction III, cuando ya exista una implementación real que genere el archivo .xlsx.
 
-## Construction I (pendiente)
+## Construction I
+
+Objetivo de la fase: dejar decidido el stack y documentado el esqueleto de la estructura del proyecto, sin comportamiento real. Los cuerpos de los métodos están vacíos o llevan un comentario de marcador de posición. Ninguna lógica de cálculo, validación, graficado, persistencia ni exportación se implementa en esta fase. Esta fase no crea ningún archivo nuevo del proyecto: el esqueleto vive dentro de este documento y se copiará a un archivo HTML al empezar Construction II.
+
+### 1. Stack tecnológico y decisiones de arquitectura
+
+| Decisión | Justificación (requisito no funcional de Inception) |
+|---|---|
+| Stack: HTML, CSS y JavaScript sin framework ni backend. | "Todos los cálculos se ejecutan en el navegador, sin backend ni servidor propio" y "el archivo abre directamente haciendo doble clic, sin instalación". Un framework agregaría un paso de compilación o una dependencia externa. |
+| Almacenamiento persistente: en el navegador (localStorage), sin base de datos ni servidor. | "El progreso del usuario se guarda automáticamente en el navegador (localStorage) para no perderse si cierra la pestaña". Además evita la fragilidad de Access que motivó el proyecto. |
+| Alcance de autenticación: ninguno. | Sin backend no hay dónde validar identidades, y la persistencia compartida entre integrantes está fuera del alcance de v1. Los datos quedan en el navegador de cada usuario. |
+| Alcance de interfaz: interfaz web mínima integrada en el mismo archivo, sin páginas separadas. | El archivo debe abrir con doble clic y funcionar sin conexión. Como se decidió en Elaboration II, no hay CDN: HTML, estilos, script y librerías van en un solo archivo. |
+
+Consecuencias de estas decisiones que conviene tener presentes:
+
+- Los datos viven en un solo navegador y equipo. Otro navegador o dispositivo no los ve.
+- Borrar los datos del sitio en el navegador borra el progreso. Este comportamiento coincide con lo ya declarado como fuera de alcance en Inception.
+
+### 2. Esqueleto del proyecto
+
+Estructura de archivos prevista. El archivo HTML no existe todavía [VERIFICAR: nombre del archivo, se propone `index.html`].
+
+```text
+Mtx/
+├── VUP.md            documento del proceso (este archivo)
+└── index.html        (por crear en Construction II) todo el producto en un solo archivo
+    ├── <style>       estilos
+    ├── <body>        barra de navegación, un contenedor por matriz y botón de exportar
+    └── <script>      seis objetos: Validador, MotorCalculo, MotorGraficos,
+                      Persistencia, Exportador y Vista
+```
+
+Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases de Elaboration II. Cada cuerpo queda vacío con un marcador de posición.
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mtx</title>
+  <style>
+    /* Construction II: estilos base, sin diseño visual definido todavía */
+    .matriz[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mtx</h1>
+    <!-- Construction II: navegación entre las siete matrices [VERIFICAR] -->
+    <nav id="navegacion"></nav>
+    <button id="btn-exportar" type="button">Exportar a Excel</button>
+  </header>
+
+  <main>
+    <section id="matriz-bcg" class="matriz" data-matriz="BCG">
+      <h2>BCG</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
+
+    <section id="matriz-efi" class="matriz" data-matriz="EFI" hidden>
+      <h2>EFI</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
+
+    <section id="matriz-efe" class="matriz" data-matriz="EFE" hidden>
+      <h2>EFE</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
+
+    <section id="matriz-mpc" class="matriz" data-matriz="MPC" hidden>
+      <h2>MPC</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
+
+    <section id="matriz-peyea" class="matriz" data-matriz="PEYEA" hidden>
+      <h2>PEYEA</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
+
+    <section id="matriz-mie" class="matriz" data-matriz="MIE" hidden>
+      <h2>MIE</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
+
+    <section id="matriz-ge" class="matriz" data-matriz="GE" hidden>
+      <h2>GE</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
+  </main>
+
+  <!-- Construction III: librería de generación de .xlsx embebida aquí, sin CDN [VERIFICAR] -->
+
+  <script>
+    'use strict';
+
+    const Validador = {
+      validar(matriz, datos) {
+        // Construction II/III
+      },
+      validarPesos(factores) {
+        // Construction II/III
+      },
+      validarRango(valor, min, max) {
+        // Construction II/III
+      },
+      validarCamposVacios(datos) {
+        // Construction II/III
+      }
+    };
+
+    const MotorCalculo = {
+      calcularBCG(divisiones) {
+        // Construction II/III
+      },
+      calcularEFI(factores) {
+        // Construction II/III
+      },
+      calcularEFE(factores) {
+        // Construction II/III
+      },
+      calcularMPC(factores, empresas) {
+        // Construction II/III
+      },
+      calcularPEYEA(ejes) {
+        // Construction II/III
+      },
+      ubicarMIE(totalEFI, totalEFE) {
+        // Construction II/III
+      },
+      ubicarGE(ejes) {
+        // Construction II/III (firma provisional, depende de la Historia 6)
+      }
+    };
+
+    const MotorGraficos = {
+      dibujarBCG(resultado) {
+        // Construction II/III
+      },
+      dibujarPEYEA(resultado) {
+        // Construction II/III
+      },
+      dibujarMIE(resultado) {
+        // Construction II/III
+      },
+      dibujarGE(resultado) {
+        // Construction II/III (firma provisional, depende de la Historia 6)
+      }
+    };
+
+    const Persistencia = {
+      guardar(estado) {
+        // Construction II/III
+      },
+      cargar() {
+        // Construction II/III
+      },
+      limpiar() {
+        // Construction II/III
+      }
+    };
+
+    const Exportador = {
+      exportarXLSX(matriz, datos, resultado) {
+        // Construction III
+      }
+    };
+
+    // La Vista es el único orquestador: llama a los otros cinco objetos.
+    const Vista = {
+      renderFormulario(matriz) {
+        // Construction II/III
+      },
+      renderResultados(matriz, resultado) {
+        // Construction II/III
+      },
+      mostrarErrores(errores) {
+        // Construction II/III
+      },
+      despacharEvento(evento) {
+        // Construction II/III
+      }
+    };
+
+    // Construction II: punto de arranque al cargar la página (escenario 5) [VERIFICAR]
+  </script>
+</body>
+</html>
+```
+
+Correspondencia con Elaboration II:
+
+- Los seis objetos del script son los seis componentes del diagrama de clases, con los mismos nombres y las mismas firmas. `MotorCalculo` y `MotorGraficos` van sin acentos por compatibilidad, igual que en los diagramas.
+- El script no agrega métodos ni componentes nuevos. No hay métodos auxiliares, constantes de configuración ni estado global.
+- Cada `<section class="matriz">` es el contenedor de una de las siete matrices. Sus cuatro `<div>` son las zonas que la Vista llena: `formulario` (`renderFormulario`), `errores` (`mostrarErrores`), `resultados` (`renderResultados`) y `grafico` (donde dibuja el Motor de Gráficos).
+- Solo la sección BCG arranca visible. Es un valor inicial provisional del esqueleto, no una decisión de qué matriz se muestra primero [VERIFICAR].
+
+### Puntos nuevos marcados [VERIFICAR] en esta fase
+
+1. Nombre del archivo HTML (se propone `index.html`).
+2. Mecanismo de navegación entre las siete matrices (pestañas, menú, enlaces con `#`). El esqueleto solo deja un `<nav>` vacío y el atributo `hidden` en cada sección. También queda por decidir qué matriz se muestra al abrir.
+3. Tecnología de dibujo del Motor de Gráficos (SVG o canvas). Los contenedores `grafico` son `<div>` neutrales, para no fijar la decisión todavía.
+4. Punto de arranque al cargar la página: el diagrama de clases de Elaboration II no tiene un método de inicialización, así que se dejó solo un comentario y no se agregó un método a la Vista. Hay que decidir cómo se cablea el escenario 5 (recuperación de sesión) sin cambiar las firmas ya aprobadas.
+5. Ubicación exacta de la librería .xlsx dentro del archivo (aquí un comentario entre el cuerpo y el script), pendiente de la elección de la librería de Elaboration II.
+6. Valores de `matriz` que reciben los métodos (`"BCG"`, `"EFI"`, etc.). El esqueleto usa las siglas de Elaboration I en el atributo `data-matriz`, pero el diagrama de clases no fija el tipo del parámetro `matriz`.
 
 ## Construction II (pendiente)
 
