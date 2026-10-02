@@ -1837,3 +1837,56 @@ Con estas extensiones, dos frases de "Correspondencia con Elaboration II" en la 
 1. Celda fuera de la diagonal sin calificar: la decisión del juez fija `null` para la diagonal pero no para una celda por calificar. Se asume la convención de las demás matrices (texto vacío), de modo que la diagonal se distingue por su posición y no por su valor.
 2. Cantidad de variables en un estado limpio: cuántas variables, con qué nombres y con cuántas marcas empieza el módulo. Las demás matrices arrancan con dos filas, y la prueba AE.7 admite una sola variable.
 3. Rutas `data-campo` de los nombres de variable y de las marcas: se asume `variables.0` y `marcas.0` por analogía con `matriz.0.1`. La decisión del juez fija solo la de la matriz.
+
+## Construction II — Módulo 2: Análisis Estructural
+
+Objetivo de la fase: implementar en `index.html` la lógica y las pantallas de Análisis Estructural sobre el esqueleto de Construction I, con las fórmulas de Elaboration I ya corregidas. Es la primera fase de este módulo que escribe código. Lo que ya está en las fases anteriores no se repite aquí.
+
+### 1. Qué se implementó
+
+| Pieza | Estado |
+|---|---|
+| Sección `matriz-ae` y botón "AE" en la navegación | Implementada. El botón lleva el título "Análisis Estructural". El botón de exportar queda habilitado en AE. |
+| `formularioAE` | Lista de variables (con "+ Agregar variable" y "− Quitar la última variable") y matriz NxN de influencias. Cada celda usa `data-campo="matriz.i.j"`; la diagonal no tiene campo y se ve bloqueada. Los rótulos de fila y columna son V1, V2, V3... |
+| `erroresAE` y `validar('AE')` | Mínimo de dos variables, matriz cuadrada y calificaciones enteras de 0 a 4. La diagonal no cuenta como campo vacío: `validar` solo le pasa a `validarCamposVacios` las celdas fuera de la diagonal. |
+| `calcularAE` | Aplica las fórmulas corregidas de Elaboration I (motricidad, dependencia, cortes, cuadrante con el corte como "alto", proyección (x) e (y) y punto de proyección). |
+| `dibujarAE` | SVG con la misma técnica de BCG y PEYEA: plano con los cuatro cuadrantes rotulados, las dos líneas de corte, la diagonal de igualdad, un punto por variable rotulado V1, V2... (el nombre completo sale al pasar el mouse) y una línea de cada punto hasta su punto de proyección. |
+| `resultadosAE` | Tabla de ranking en orden de carga con la columna SÍ o NO, y la hoja Validadas (lista de solo lectura de las marcadas con SÍ), ambas dentro de `renderResultados('AE', resultado)`. |
+| Persistencia | `estadoVacio` trae `AE` vacío. `cargar()` completa `datos.AE` con vacío si un estado guardado anterior no lo trae o lo trae dañado, y conserva los demás datos. Sin cambio de versión del formato. |
+| Exportador | Rama `"AE"` con las hojas "Datos" y "Resultados". Ver el punto 3. |
+| Pruebas | `tests/elaboration1.test.js`: pruebas AE.1 a AE.10, más la comprobación X.6 del Exportador de AE. |
+
+### 2. Forma final de `ResultadoAE`
+
+La forma que devuelve `calcularAE` no cambió: `{ corteY, corteX, variables: [{ nombre, motricidad, dependencia, cuadrante, proyeccion: { x, y }, puntoProyeccion, marca }] }`, con las variables en el mismo orden de entrada. Lo que sí hubo que precisar es la entrada. `calcularAE(variables, matriz)` tiene dos parámetros y las marcas viven aparte en `estado.datos.AE.marcas`, así que el resultado no podía traer `marca` sin recibirla. Decisión de esta fase: cada elemento de `variables` puede ser un texto (el nombre) o un objeto `{ nombre, marca }`, igual que `valorDeFactor` ya acepta un número o un objeto en PEYEA. La Vista arma esos objetos a partir de `datos.variables` y `datos.marcas`. Una variable sin nombre se llama V1, V2, V3... según su posición.
+
+### 3. [VERIFICAR] Estructura del Excel exportado
+
+Decisión del juez: dos hojas, "Datos" y "Resultados", archivo `Mtx-AE.xlsx`. En "Datos", la matriz completa con los nombres de variable como encabezado de fila y de columna y la diagonal vacía. En "Resultados", una fila por variable en orden de carga (nombre, motricidad, dependencia, cuadrante, proyección x, proyección y y marca, que sale como SÍ, NO o vacío) y, después de una fila vacía, las filas "Corte Y" y "Corte X". No hay manera de confirmar si esto coincide con lo que produciría el Excel original: la base de datos del profesor está protegida con contraseña y ningún método disponible en este entorno logra abrirla. Queda pendiente de confirmar con el profesor.
+
+### 4. Criterios aplicados donde las fases anteriores no fijaban un valor
+
+- **Estado limpio:** `datos.AE` empieza con listas vacías, sin ninguna variable (cierra el punto 2 de los [VERIFICAR] de Construction I). El estudiante agrega las suyas con "+".
+- **Celda sin calificar:** texto vacío, como en las demás matrices. La diagonal se distingue por su posición y vale `null` (punto 1 de Construction I).
+- **Rutas de campos:** `variables.0` y `marcas.0` (punto 3 de Construction I). Una marca sin definir se guarda como `null` (el selector la manda como texto vacío y `despacharEvento` la convierte).
+- **Matriz "vacía":** sin ninguna celda calificada fuera de la diagonal. Los nombres y las marcas no cuentan. Con una variable no hay celdas que calificar, así que cae en el mismo caso (prueba AE.7).
+- **Calificaciones con decimales:** se rechazan, como en EFI, EFE y MPC. Sigue abierto el punto 4 de [VERIFICAR] de Elaboration I.
+- **Muchos errores de rango:** el Validador lista los primeros 20 y resume el resto en una línea, para no escribir miles de mensajes en una matriz grande.
+- **Aviso en pantalla:** debajo de la tabla de ranking hay un recuadro ámbar que dice que el orden es el de carga y que el criterio del curso está pendiente, igual que los demás criterios provisionales.
+- **Escala del plano:** la misma en los dos ejes, para que la diagonal de igualdad quede a 45°, con un 10 % de margen sobre el máximo.
+- **Todas las calificaciones en 0:** los cortes quedan en 0 y, como un valor en el corte cuenta como alto, todas las variables caen en AMBIGUAS. Es consecuencia de las fórmulas, no un criterio nuevo; no se agregó ningún aviso.
+
+### 5. Verificación
+
+Comando: `node tests/elaboration1.test.js`. Resultado de la última corrida: 32 de 32 comprobaciones correctas (las 21 anteriores, que incluyen la X.1 contra el diagrama de clases con `calcularAE` y `dibujarAE`, más AE.1 a AE.10 y X.6). Con cuatro fallos introducidos a propósito en una copia fuera del repositorio (corte en el promedio, corte con `>` en lugar de `>=`, variables ordenadas por motricidad y sin completar `AE` en estados anteriores), 8 comprobaciones fallaron.
+
+Para poder probar el estado "vacía", "inválida" u "ok" con el `evaluarMatriz` real de la aplicación, `cargarApp` del arnés ahora devuelve además `evaluarMatriz` y un `fijarEstado`. No cambia ningún componente.
+
+Además se recorrió el módulo en Chrome sin interfaz con eventos reales del DOM, sobre una copia temporal fuera del repositorio: agregar cuatro variables, completar la matriz de AE.1, ver los cuatro cuadrantes, las cuatro proyecciones y la lista Validadas con V1 y V4, quitar la última variable y la validación de un valor 5. Sin errores de consola, y BCG y GE siguen como estaban.
+
+### 6. Qué queda para Construction III
+
+- El resultado visual real de `dibujarAE` (posición de puntos, líneas de corte, rótulos y líneas de proyección), igual que `dibujarGE` solo se prueba por su error de pendiente.
+- El bloqueo de la diagonal en pantalla (prueba AE.5) y el orden de renderizado de la tabla de ranking y de la hoja Validadas (AE.8 y AE.9).
+- Rendimiento con una matriz grande (hasta 200 variables, 40 000 celdas): no se midió. Cada tecla recalcula y redibuja todo el módulo.
+- Navegadores distintos de Chrome, el archivo descargado de internet y la exportación abierta en Excel: nada de esto se verificó en esta fase.
