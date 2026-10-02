@@ -1448,7 +1448,7 @@ Fórmulas verificadas contra el código VBA original en Inception, que estas pru
 - dependencia(Vi) = suma de la columna i de la matriz.
 - corteY = (máximo de motricidad entre todas las variables) / 2.
 - corteX = (máximo de dependencia entre todas las variables) / 2.
-- Cuadrante: motricidad > corteY y dependencia <= corteX es INDEPENDIENTES. Motricidad > corteY y dependencia > corteX es AMBIGUAS. Motricidad <= corteY y dependencia <= corteX es AUTONOMAS. Motricidad <= corteY y dependencia > corteX es DEPENDIENTES.
+- Cuadrante: motricidad >= corteY y dependencia < corteX es INDEPENDIENTES. Motricidad >= corteY y dependencia >= corteX es AMBIGUAS. Motricidad < corteY y dependencia < corteX es AUTONOMAS. Motricidad < corteY y dependencia >= corteX es DEPENDIENTES. Un valor exactamente en el corte cuenta como alta en ese eje.
 - Proyección (x) = (motricidad − dependencia) / 2.
 - Proyección (y) = |dependencia − motricidad| / √2.
 
@@ -1491,12 +1491,12 @@ Fórmulas verificadas contra el código VBA original en Inception, que estas pru
   | V3 | 0 | 0 | - |
 
 - Cuando el sistema calcula el análisis
-- Entonces las motricidades son V1 = 4, V2 = 2 y V3 = 0, y las dependencias son V1 = 1, V2 = 2 y V3 = 3. Por tanto corteY = 4 / 2 = 2 y corteX = 3 / 2 = 1.5. V2 tiene motricidad 2, exactamente igual a corteY. Con las fórmulas verificadas (motricidad <= corteY es baja), el resultado es:
+- Entonces las motricidades son V1 = 4, V2 = 2 y V3 = 0, y las dependencias son V1 = 1, V2 = 2 y V3 = 3. Por tanto corteY = 4 / 2 = 2 y corteX = 3 / 2 = 1.5. V2 tiene motricidad 2, exactamente igual a corteY, y cuenta como alta. El resultado es:
   - V1: INDEPENDIENTES.
-  - V2: DEPENDIENTES.
+  - V2: AMBIGUAS.
   - V3: DEPENDIENTES.
 
-Esta prueba aplica la regla de las fórmulas verificadas. La decisión del juez para esta fase dice que un valor exactamente en el corte cuenta como "alta" en ese eje, y con ella V2 pasaría a AMBIGUAS. Ambas instrucciones se contradicen; ver el punto 1 de la lista de [VERIFICAR] al final de esta sección.
+El juez fijó que un valor exactamente en el corte cuenta como "alta" en ese eje, la misma lógica que el umbral del BCG en el Módulo 1: un valor justo en el corte cuenta como la clasificación más notable. Queda pendiente de confirmar con el profesor, igual que el umbral del BCG.
 
 **Prueba AE.3: dependencia exactamente en el corte [VERIFICAR]**
 
@@ -1509,12 +1509,12 @@ Esta prueba aplica la regla de las fórmulas verificadas. La decisión del juez 
   | V3 | 2 | 1 | - |
 
 - Cuando el sistema calcula el análisis
-- Entonces las motricidades son V1 = 1, V2 = 2 y V3 = 3, y las dependencias son V1 = 4, V2 = 2 y V3 = 0. Por tanto corteY = 3 / 2 = 1.5 y corteX = 4 / 2 = 2. V2 tiene dependencia 2, exactamente igual a corteX. Con las fórmulas verificadas (dependencia <= corteX es baja), el resultado es:
+- Entonces las motricidades son V1 = 1, V2 = 2 y V3 = 3, y las dependencias son V1 = 4, V2 = 2 y V3 = 0. Por tanto corteY = 3 / 2 = 1.5 y corteX = 4 / 2 = 2. V2 tiene dependencia 2, exactamente igual a corteX, y cuenta como alta. El resultado es:
   - V1: DEPENDIENTES.
-  - V2: INDEPENDIENTES.
+  - V2: AMBIGUAS.
   - V3: INDEPENDIENTES.
 
-Misma contradicción que en AE.2: con la decisión del juez V2 pasaría a AMBIGUAS.
+Aplica la misma convención de valor en el corte que AE.2.
 
 **Prueba AE.4: los cortes están en la mitad del máximo, no en el promedio**
 
@@ -1586,8 +1586,8 @@ El orden de carga es un criterio provisional: el criterio real de la tabla de ra
 | Prueba | Qué verifica | Estado |
 |---|---|---|
 | AE.1 | Motricidad, dependencia, cortes, los cuatro cuadrantes y las proyecciones | Con prueba concreta |
-| AE.2 | Motricidad exactamente en corteY | Con prueba concreta, convención pendiente [VERIFICAR] |
-| AE.3 | Dependencia exactamente en corteX | Con prueba concreta, convención pendiente [VERIFICAR] |
+| AE.2 | Motricidad exactamente en corteY | Con prueba concreta, convención del juez, confirmación del profesor pendiente [VERIFICAR] |
+| AE.3 | Dependencia exactamente en corteX | Con prueba concreta, convención del juez, confirmación del profesor pendiente [VERIFICAR] |
 | AE.4 | Cortes en la mitad del máximo, no en el promedio | Con prueba concreta |
 | AE.5 | Diagonal bloqueada | Con prueba concreta |
 | AE.6 | Celdas sin calificar (vacía e inválida) y valores fuera de rango | Con prueba concreta |
@@ -1600,8 +1600,8 @@ Total: 10 pruebas Given-When-Then.
 
 Puntos [VERIFICAR] de esta fase:
 
-1. **Valor exactamente en el corte: dos instrucciones se contradicen.** Las fórmulas verificadas contra el VBA dicen que motricidad <= corteY y dependencia <= corteX cuentan como baja en su eje, es decir, un valor exactamente en el corte cuenta como "baja". La decisión del juez para esta fase dice que un valor exactamente en el corte cuenta como "alta", como el umbral del BCG en el Módulo 1. Las pruebas AE.2 y AE.3 usan las fórmulas verificadas, porque la Inception de este módulo fija que donde la teoría y el Excel del profesor difieran el sistema sigue al Excel. Con el criterio "alta", V2 pasaría a AMBIGUAS en AE.2 y en AE.3. Hay que decidir cuál rige y, si es el segundo, corregir las fórmulas (motricidad >= corteY y dependencia >= corteX) y esas dos pruebas.
-2. **Significado de la proyección.** La Inception de este módulo describe la proyección como el punto de la diagonal de igualdad, ((dependencia + motricidad) / 2, (dependencia + motricidad) / 2), que para V1 de AE.1 sería (4.5, 4.5). Las fórmulas verificadas dan otros números para V1: (3.5, 4.9497). Son coherentes si se leen así: x es el desplazamiento horizontal desde el punto de la variable hasta la diagonal ((motricidad + dependencia) / 2 − dependencia) y y es la longitud del segmento (la distancia del punto a la diagonal). Esa lectura es del constructor y no está confirmada. Falta confirmar qué valor debe exponer el sistema y cuál debe dibujar el gráfico. Las pruebas usan las fórmulas verificadas tal cual.
+1. **Valor exactamente en el corte, resuelto por el juez.** Cuenta como alta en ese eje (fórmulas corregidas arriba: motricidad >= corteY, dependencia >= corteX). Es la misma lógica que el umbral del BCG en el Módulo 1. Queda pendiente de confirmar con el profesor, igual que ese umbral.
+2. **Significado de la proyección, aclarado por el juez.** No hay contradicción: son dos cosas distintas del mismo código VBA. El punto de proyección sobre la diagonal, ((dependencia + motricidad) / 2, mismo valor en los dos ejes), es el punto al que el gráfico dibuja una línea desde cada variable; para V1 de AE.1 es (4.5, 4.5), y no se guarda como dato, solo se dibuja. Las fórmulas verificadas de proyección (x) e (y) son dos valores distintos, derivados de ese mismo punto, que sí se guardan en la tabla de ranking del Excel original: (x) es el desplazamiento con signo entre la variable y el punto de proyección; (y) es la distancia real, siempre positiva, entre la variable y ese mismo punto. Las pruebas de esta fase usan correctamente (x) e (y); no hace falta cambiar ninguna.
 3. **Criterio de orden de la tabla de ranking y de la hoja Validadas.** Provisional: orden de carga (V1, V2, V3...). El criterio real vive en una consulta de la base Access protegida y no se pudo verificar (punto 1 de la Inception de este módulo).
 4. **Calificaciones con decimales.** La escala es de 0 a 4 con cinco niveles con nombre. Ninguna prueba fija si un valor como 2.5 se rechaza. Se asume que sí, igual que las clasificaciones de EFI, EFE y MPC en el Módulo 1, pero no se fija con una prueba numérica.
 5. **Redacción y estado inicial de las marcas.** Las pruebas AE.6 y AE.9 no fijan la redacción exacta de los mensajes de error ni de una lista vacía, que se definen en el diseño. Tampoco se fija si una variable recién cargada aparece como NO o sin marcar; las pruebas AE.8 y AE.9 no dependen de eso.
