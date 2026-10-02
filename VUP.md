@@ -1430,3 +1430,178 @@ Archivos originales del profesor, en `C:\Obsidian\Mi_Segundo_Cerebro\07_gestion_
 - `data-ae.accdb`: base Access protegida con contraseña, que no se pudo abrir. Contiene la consulta `c03_Motricidad_Dependencia`.
 
 Este Inception se escribió a partir de esos hallazgos, tal como los entregó el juez. El constructor no volvió a abrir los archivos originales en esta fase.
+
+## Elaboration I — Módulo 2: Análisis Estructural
+
+Objetivo de la fase: definir, para la historia de usuario del módulo, pruebas de aceptación concretas en formato Given-When-Then (Dado / Cuando / Entonces), con valores numéricos y resultado esperado exacto. No hay código en esta fase. Los resultados esperados de la prueba AE.1 los verificó el juez aritméticamente y se transcriben tal cual; los de las demás pruebas se calcularon a mano a partir de las fórmulas de abajo y se revisaron fila por fila y columna por columna.
+
+Convenciones de esta sección:
+
+- La numeración es "Prueba AE.n" (AE por Análisis Estructural) y no "Prueba X.Y", porque el módulo tiene una sola historia y las pruebas 1.1 a 7.1 ya pertenecen al Módulo 1.
+- Notación de las matrices: la fila influye sobre la columna, la calificación va de 0 a 4 y la diagonal (marcada con "-") está bloqueada. Las variables se llaman V1, V2, V3... en el orden en que se cargan.
+- Los valores numéricos se comparan con dos decimales. Las proyecciones se citan con cuatro decimales solo para que se puedan verificar a mano.
+- Las marcas [VERIFICAR] señalan una convención que debe confirmarse con el profesor o con el juez. Se consolidan al final de esta sección.
+
+Fórmulas verificadas contra el código VBA original en Inception, que estas pruebas no rederivan:
+
+- motricidad(Vi) = suma de la fila i de la matriz.
+- dependencia(Vi) = suma de la columna i de la matriz.
+- corteY = (máximo de motricidad entre todas las variables) / 2.
+- corteX = (máximo de dependencia entre todas las variables) / 2.
+- Cuadrante: motricidad > corteY y dependencia <= corteX es INDEPENDIENTES. Motricidad > corteY y dependencia > corteX es AMBIGUAS. Motricidad <= corteY y dependencia <= corteX es AUTONOMAS. Motricidad <= corteY y dependencia > corteX es DEPENDIENTES.
+- Proyección (x) = (motricidad − dependencia) / 2.
+- Proyección (y) = |dependencia − motricidad| / √2.
+
+### Historia: Análisis Estructural
+
+**Prueba AE.1: cuatro variables que cubren los cuatro cuadrantes**
+
+- Dado que el estudiante carga cuatro variables y califica la matriz de influencias así:
+
+  | | V1 | V2 | V3 | V4 |
+  |---|---|---|---|---|
+  | V1 | - | 4 | 0 | 4 |
+  | V2 | 1 | - | 2 | 4 |
+  | V3 | 0 | 1 | - | 0 |
+  | V4 | 0 | 2 | 0 | - |
+
+- Cuando el sistema calcula el análisis
+- Entonces se cumple todo lo siguiente:
+  - Los cortes son corteY = 4 y corteX = 4 (el máximo de motricidad es 8, la de V1, y el máximo de dependencia es 8, la de V4).
+  - Resultado por variable:
+
+    | Variable | Motricidad | Dependencia | Cuadrante | Proyección (x, y) |
+    |---|---|---|---|---|
+    | V1 | 8 | 1 | INDEPENDIENTES | (3.5, 4.9497) |
+    | V2 | 7 | 7 | AMBIGUAS | (0, 0) |
+    | V3 | 1 | 2 | AUTONOMAS | (−0.5, 0.7071) |
+    | V4 | 2 | 8 | DEPENDIENTES | (−3, 4.2426) |
+
+  - Cada cuadrante tiene exactamente una variable, así que esta prueba ejercita los cuatro rótulos a la vez.
+  - V2 tiene motricidad igual a dependencia, por lo que cae sobre la diagonal de igualdad y su proyección es (0, 0).
+
+**Prueba AE.2: motricidad exactamente en el corte [VERIFICAR]**
+
+- Dado que el estudiante califica tres variables así:
+
+  | | V1 | V2 | V3 |
+  |---|---|---|---|
+  | V1 | - | 2 | 2 |
+  | V2 | 1 | - | 1 |
+  | V3 | 0 | 0 | - |
+
+- Cuando el sistema calcula el análisis
+- Entonces las motricidades son V1 = 4, V2 = 2 y V3 = 0, y las dependencias son V1 = 1, V2 = 2 y V3 = 3. Por tanto corteY = 4 / 2 = 2 y corteX = 3 / 2 = 1.5. V2 tiene motricidad 2, exactamente igual a corteY. Con las fórmulas verificadas (motricidad <= corteY es baja), el resultado es:
+  - V1: INDEPENDIENTES.
+  - V2: DEPENDIENTES.
+  - V3: DEPENDIENTES.
+
+Esta prueba aplica la regla de las fórmulas verificadas. La decisión del juez para esta fase dice que un valor exactamente en el corte cuenta como "alta" en ese eje, y con ella V2 pasaría a AMBIGUAS. Ambas instrucciones se contradicen; ver el punto 1 de la lista de [VERIFICAR] al final de esta sección.
+
+**Prueba AE.3: dependencia exactamente en el corte [VERIFICAR]**
+
+- Dado que el estudiante califica tres variables así (es la matriz de AE.2 transpuesta):
+
+  | | V1 | V2 | V3 |
+  |---|---|---|---|
+  | V1 | - | 1 | 0 |
+  | V2 | 2 | - | 0 |
+  | V3 | 2 | 1 | - |
+
+- Cuando el sistema calcula el análisis
+- Entonces las motricidades son V1 = 1, V2 = 2 y V3 = 3, y las dependencias son V1 = 4, V2 = 2 y V3 = 0. Por tanto corteY = 3 / 2 = 1.5 y corteX = 4 / 2 = 2. V2 tiene dependencia 2, exactamente igual a corteX. Con las fórmulas verificadas (dependencia <= corteX es baja), el resultado es:
+  - V1: DEPENDIENTES.
+  - V2: INDEPENDIENTES.
+  - V3: INDEPENDIENTES.
+
+Misma contradicción que en AE.2: con la decisión del juez V2 pasaría a AMBIGUAS.
+
+**Prueba AE.4: los cortes están en la mitad del máximo, no en el promedio**
+
+- Dado que el estudiante califica cuatro variables así:
+
+  | | V1 | V2 | V3 | V4 |
+  |---|---|---|---|---|
+  | V1 | - | 4 | 4 | 4 |
+  | V2 | 3 | - | 2 | 2 |
+  | V3 | 3 | 2 | - | 2 |
+  | V4 | 3 | 2 | 2 | - |
+
+- Cuando el sistema calcula el análisis
+- Entonces las motricidades son V1 = 12, V2 = 7, V3 = 7 y V4 = 7, y las dependencias son V1 = 9, V2 = 8, V3 = 8 y V4 = 8. Los cortes son corteY = 12 / 2 = 6 y corteX = 9 / 2 = 4.5, y las cuatro variables quedan en AMBIGUAS. (Si los cortes se pusieran en el promedio, que es 33 / 4 = 8.25 en los dos ejes, V2, V3 y V4 caerían en AUTONOMAS y solo V1 en AMBIGUAS. Esta prueba detecta ese error.)
+
+**Prueba AE.5: la diagonal está bloqueada**
+
+- Dado que el estudiante tiene cargadas tres variables y abre la matriz de influencias
+- Cuando intenta escribir una calificación en una celda de la diagonal (V1 con V1, V2 con V2 o V3 con V3)
+- Entonces el sistema no le permite escribir en esas celdas. Además, las celdas de la diagonal no cuentan como celdas sin calificar: si el estudiante completa las seis celdas fuera de la diagonal, la matriz se considera completa y el sistema calcula.
+
+**Prueba AE.6: celdas sin calificar y valores fuera de rango**
+
+Misma regla que el resto del sistema (la función `evaluarMatriz` ya existente), aplicada a tres variables con las seis celdas fuera de la diagonal.
+
+- Dado que el estudiante tiene cargadas tres variables
+- Cuando se presentan estos tres casos por separado
+- Entonces el sistema responde así en cada uno:
+  - Ninguna de las seis celdas tiene valor: estado "vacía". No se muestra ningún error, no se calcula nada y no hay gráfico.
+  - Cinco celdas tienen valor y una está en blanco: estado "inválida". Se muestra el error de campos vacíos del sistema (la redacción exacta se define en el diseño), no se calcula nada y no hay gráfico.
+  - Las seis celdas tienen valor, pero una es 5 (o −1): estado "inválida". Se muestra un error que indica que la calificación debe estar entre 0 y 4, no se calcula nada y no hay gráfico.
+- Los datos escritos se conservan en los tres casos: el estudiante no pierde lo que ya escribió.
+
+**Prueba AE.7: mínimo de dos variables**
+
+- Dado que el estudiante carga una sola variable, V1
+- Cuando abre la matriz de influencias
+- Entonces no hay ninguna celda que calificar (la única celda es la diagonal, bloqueada), y el sistema trata la situación igual que una matriz vacía: estado "vacía", sin error, sin cálculo y sin gráfico.
+
+- Dado que el estudiante carga dos variables y califica V1 sobre V2 = 3 y V2 sobre V1 = 1
+- Cuando el sistema calcula el análisis
+- Entonces las motricidades son V1 = 3 y V2 = 1, las dependencias son V1 = 1 y V2 = 3, y corteY = corteX = 3 / 2 = 1.5. V1 queda en INDEPENDIENTES con proyección (1, 1.4142) y V2 en DEPENDIENTES con proyección (−1, 1.4142).
+
+**Prueba AE.8: tabla de ranking y hoja Validadas en orden de carga [VERIFICAR]**
+
+- Dado el análisis de la prueba AE.1 ya calculado
+- Cuando el estudiante marca V4 con SÍ, V2 con NO, V3 con NO y, por último, V1 con SÍ
+- Entonces se cumple todo lo siguiente:
+  - La tabla de ranking lista las cuatro variables en orden de carga: V1, V2, V3, V4.
+  - La hoja Validadas (la hoja final de solo lectura) lista exactamente V1 y V4, en ese orden, aunque V4 se haya marcado antes que V1.
+  - La hoja Validadas no permite editar ninguna marca.
+
+El orden de carga es un criterio provisional: el criterio real de la tabla de ranking no se pudo verificar (punto 1 de los [VERIFICAR] de la Inception de este módulo). Si el profesor confirma otro criterio, esta prueba debe reescribirse.
+
+**Prueba AE.9: ninguna variable marcada con SÍ**
+
+- Dado el análisis de la prueba AE.1 ya calculado
+- Cuando el estudiante no marca ninguna variable con SÍ (todas en NO o sin marcar)
+- Entonces la hoja Validadas queda sin ninguna variable en su lista, sin error y sin bloquear el resto del módulo.
+
+**Prueba AE.10: los datos siguen tras recargar**
+
+- Dado el análisis de la prueba AE.1 con las marcas de la prueba AE.8
+- Cuando el estudiante recarga la página o vuelve a abrir el archivo
+- Entonces las cuatro variables, las calificaciones de la matriz y las marcas SÍ y NO siguen ahí, el sistema recalcula los mismos resultados de la prueba AE.1 y la hoja Validadas vuelve a listar V1 y V4. Esto aplica al módulo el requisito general de guardado automático de la Inception original.
+
+### Resumen de la fase
+
+| Prueba | Qué verifica | Estado |
+|---|---|---|
+| AE.1 | Motricidad, dependencia, cortes, los cuatro cuadrantes y las proyecciones | Con prueba concreta |
+| AE.2 | Motricidad exactamente en corteY | Con prueba concreta, convención pendiente [VERIFICAR] |
+| AE.3 | Dependencia exactamente en corteX | Con prueba concreta, convención pendiente [VERIFICAR] |
+| AE.4 | Cortes en la mitad del máximo, no en el promedio | Con prueba concreta |
+| AE.5 | Diagonal bloqueada | Con prueba concreta |
+| AE.6 | Celdas sin calificar (vacía e inválida) y valores fuera de rango | Con prueba concreta |
+| AE.7 | Mínimo de dos variables | Con prueba concreta |
+| AE.8 | Tabla de ranking y hoja Validadas en orden de carga | Con prueba concreta, orden provisional [VERIFICAR] |
+| AE.9 | Ninguna variable marcada con SÍ | Con prueba concreta |
+| AE.10 | Persistencia al recargar | Con prueba concreta |
+
+Total: 10 pruebas Given-When-Then.
+
+Puntos [VERIFICAR] de esta fase:
+
+1. **Valor exactamente en el corte: dos instrucciones se contradicen.** Las fórmulas verificadas contra el VBA dicen que motricidad <= corteY y dependencia <= corteX cuentan como baja en su eje, es decir, un valor exactamente en el corte cuenta como "baja". La decisión del juez para esta fase dice que un valor exactamente en el corte cuenta como "alta", como el umbral del BCG en el Módulo 1. Las pruebas AE.2 y AE.3 usan las fórmulas verificadas, porque la Inception de este módulo fija que donde la teoría y el Excel del profesor difieran el sistema sigue al Excel. Con el criterio "alta", V2 pasaría a AMBIGUAS en AE.2 y en AE.3. Hay que decidir cuál rige y, si es el segundo, corregir las fórmulas (motricidad >= corteY y dependencia >= corteX) y esas dos pruebas.
+2. **Significado de la proyección.** La Inception de este módulo describe la proyección como el punto de la diagonal de igualdad, ((dependencia + motricidad) / 2, (dependencia + motricidad) / 2), que para V1 de AE.1 sería (4.5, 4.5). Las fórmulas verificadas dan otros números para V1: (3.5, 4.9497). Son coherentes si se leen así: x es el desplazamiento horizontal desde el punto de la variable hasta la diagonal ((motricidad + dependencia) / 2 − dependencia) y y es la longitud del segmento (la distancia del punto a la diagonal). Esa lectura es del constructor y no está confirmada. Falta confirmar qué valor debe exponer el sistema y cuál debe dibujar el gráfico. Las pruebas usan las fórmulas verificadas tal cual.
+3. **Criterio de orden de la tabla de ranking y de la hoja Validadas.** Provisional: orden de carga (V1, V2, V3...). El criterio real vive en una consulta de la base Access protegida y no se pudo verificar (punto 1 de la Inception de este módulo).
+4. **Calificaciones con decimales.** La escala es de 0 a 4 con cinco niveles con nombre. Ninguna prueba fija si un valor como 2.5 se rechaza. Se asume que sí, igual que las clasificaciones de EFI, EFE y MPC en el Módulo 1, pero no se fija con una prueba numérica.
+5. **Redacción y estado inicial de las marcas.** Las pruebas AE.6 y AE.9 no fijan la redacción exacta de los mensajes de error ni de una lista vacía, que se definen en el diseño. Tampoco se fija si una variable recién cargada aparece como NO o sin marcar; las pruebas AE.8 y AE.9 no dependen de eso.
