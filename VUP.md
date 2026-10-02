@@ -1830,7 +1830,7 @@ No hay un bloque de código nuevo. Se extendió el esqueleto de la Construction 
 
 Lo que no cambia en el esqueleto: los seis objetos y sus firmas públicas, salvo las dos firmas nuevas de arriba. `Vista`, `Validador`, `Persistencia` y `Exportador` no suman ningún método público. Las auxiliares privadas son funciones sueltas del script, igual que `erroresBCG` y `formularioBCG`: no son métodos de los objetos y no modifican sus firmas.
 
-Con estas extensiones, dos frases de "Correspondencia con Elaboration II" en la Construction I del Módulo 1 describen el esqueleto de ese módulo y ya no son literales: "El script no agrega métodos ni componentes nuevos" y "No hay métodos auxiliares". No se editan, porque lo que dicen era cierto para el Módulo 1.
+Con estas extensiones, dos frases de "Correspondencia con Elaboration II" en la Construction I del Módulo 1 describían el esqueleto de ese módulo sin acotarlo: "El script no agrega métodos ni componentes nuevos" y "No hay métodos auxiliares". Un commit de sincronización aparte ya les agregó esa acotación, apuntando a esta sección.
 
 ### Puntos nuevos marcados [VERIFICAR] en esta fase
 
