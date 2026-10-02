@@ -616,7 +616,7 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
 <body>
   <header>
     <h1>Mtx</h1>
-    <!-- Construction II: navegación entre las siete matrices [VERIFICAR] -->
+    <!-- Construction II: navegación entre las ocho matrices [VERIFICAR] -->
     <nav id="navegacion"></nav>
     <button id="btn-exportar" type="button">Exportar a Excel</button>
   </header>
@@ -821,7 +821,7 @@ Correspondencia con Elaboration II:
 3. Resuelto: el Motor de Gráficos usa SVG, no canvas. Los gráficos de Mtx son formas simples en dos dimensiones (cuadrantes, burbujas, un vector, una cuadrícula de nueve celdas), no requieren dibujar grandes volúmenes de píxeles, y SVG permite inspeccionar, probar y dar estilo con CSS a cada elemento como un nodo del DOM, sin una librería adicional. Los contenedores `grafico` siguen siendo `<div>` en el esqueleto; el `<svg>` se agrega dentro de cada uno en Construction II.
 4. Resuelto: se agrega una rutina de arranque fuera de los seis componentes (no un método nuevo en la Vista, para no modificar las firmas ya aprobadas en Elaboration II), que al cargar la página llama a `Persistencia.cargar()` y, con el resultado, a los métodos ya existentes de la Vista para repoblar cada matriz. El código de esta rutina se agrega en Construction II, junto con el resto del comportamiento.
 5. Resuelto: se implementó en Construction II (la librería va embebida en un `<script id="sheetjs">` del propio `index.html`, antes del script de la aplicación, donde estaba el comentario marcador).
-6. Resuelto: `matriz` es siempre un string con una de las siete siglas ya usadas en Elaboration I y en el atributo `data-matriz` del esqueleto (`"BCG"`, `"EFI"`, `"EFE"`, `"MPC"`, `"PEYEA"`, `"MIE"`, `"GE"`), no un objeto ni un código numérico.
+6. Resuelto: `matriz` es siempre un string con una de las ocho siglas ya usadas en Elaboration I y en el atributo `data-matriz` del esqueleto (`"BCG"`, `"EFI"`, `"EFE"`, `"MPC"`, `"PEYEA"`, `"MIE"`, `"GE"` y, desde Elaboration II del Módulo 2, `"AE"`), no un objeto ni un código numérico.
 
 ## Construction II
 
