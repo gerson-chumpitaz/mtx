@@ -1364,3 +1364,69 @@ Respuesta:
 **5. ¿Qué agregarías si siguieras desarrollando el proyecto?**
 
 Respuesta:
+
+## Inception — Módulo 2: Análisis Estructural
+
+Objetivo de la fase: abrir un segundo ciclo VUP dentro de este mismo documento, para el módulo de Análisis Estructural, con la misma estructura de la Inception original. Esta fase no escribe código, no define firmas de componentes ni pruebas Given-When-Then (eso es Elaboration I de este módulo) y no modifica `index.html` ni `tests/`. El módulo reutiliza la visión, la justificación y los requisitos no funcionales generales de la Inception original; aquí solo se agrega lo que es propio de Análisis Estructural.
+
+### Nombre del módulo
+
+Análisis Estructural (técnica MICMAC de Godet, adaptada por el profesor del curso).
+
+### Alcance v1
+
+Este módulo es una sola herramienta con cuatro etapas internas, no un conjunto de matrices independientes entre sí. Todo lo que sigue se apoya en la revisión directa que hizo el juez de los archivos originales del profesor (ver "Fuentes consultadas").
+
+Etapas de la herramienta:
+
+1. **Carga de variables.** El estudiante define las variables de su tema de análisis. La guía del profesor admite hasta 200; el uso real de un curso probablemente es mucho menor [VERIFICAR, punto 2 de la lista de abajo].
+2. **Matriz de influencias directas.** Una matriz de N filas por N columnas, donde el estudiante califica de 0 a 4 cuánto influye cada variable (fila) sobre cada otra (columna): 0 no influye, 1 débil, 2 moderada, 3 fuerte, 4 muy fuerte. La diagonal queda bloqueada: una variable no se califica a sí misma.
+3. **Motricidad, dependencia y plano estratégico.** El sistema calcula, para cada variable, la motricidad (suma de su fila: cuánto influye sobre las demás) y la dependencia (suma de su columna: cuánto la influyen las demás), y la ubica como un punto en un plano con la motricidad en el eje Y y la dependencia en el eje X.
+4. **Selección para la siguiente etapa.** Junto al gráfico hay una tabla de ranking donde el estudiante marca con SÍ o NO cuáles variables pasan a la siguiente etapa de su trabajo. Una hoja final de solo lectura muestra la lista de las variables marcadas con SÍ.
+
+Lo que hace el gráfico en v1:
+
+- **Cuadrantes.** Las dos líneas que dividen el plano NO van en el promedio de los valores cargados. Van exactamente en la mitad del máximo de motricidad observado entre todas las variables (eje Y) y en la mitad del máximo de dependencia observado (eje X). Esto se verificó leyendo el código VBA del Excel original; no es una suposición de la teoría MICMAC de manual.
+- **Rótulos oficiales de los cuatro cuadrantes.** Los que rotula el gráfico real del Excel, el que ve el estudiante: INDEPENDIENTES (motricidad alta, dependencia baja), AMBIGUAS (motricidad alta, dependencia alta), AUTONOMAS (motricidad baja, dependencia baja) y DEPENDIENTES (motricidad baja, dependencia alta). Son la terminología estándar de MICMAC y son los rótulos del sistema.
+- **Descripción complementaria.** El PDF "Qué carga usted y qué sale solo" usa lenguaje llano para los mismos cuatro cuadrantes, en el mismo orden: "Las que hay que mover", "Inestables", "Se dejan para después" y "Resultados". Se usan solo como texto de apoyo si hace falta, no como rótulos del gráfico.
+- **Proyección sobre la diagonal.** Para cada variable, el gráfico dibuja una línea desde su punto (dependencia, motricidad) hasta su proyección sobre la diagonal de igualdad, el punto donde motricidad y dependencia serían iguales: ((dependencia + motricidad) / 2, (dependencia + motricidad) / 2). Ningún PDF lo menciona, pero el código del Excel lo construye siempre y lo muestra, así que forma parte del alcance v1.
+
+Lo que v1 no incluye de este módulo: la "siguiente etapa" del trabajo del estudiante a la que pasan las variables marcadas con SÍ. El módulo solo entrega la lista de las marcadas.
+
+### Historia de usuario
+
+Como estudiante, quiero cargar las variables de mi tema de análisis y calificar en una matriz cuánto influye cada una sobre las demás, para que el sistema calcule automáticamente su motricidad y dependencia, las ubique en el plano estratégico según esos valores, y me permita marcar cuáles paso a la siguiente etapa de mi trabajo.
+
+Es una sola historia porque el módulo es una sola herramienta con cuatro etapas encadenadas: cada etapa toma como entrada lo que produjo la anterior, y ninguna se usa por separado.
+
+### Requisitos no funcionales específicos del módulo
+
+Ya cubiertos por los requisitos no funcionales generales de la Inception original y por lo tanto no se repiten: cálculo íntegro en el navegador, apertura con doble clic sin instalación, interfaz usable por un estudiante sin conocimientos técnicos, y guardado automático del progreso en localStorage. Los que no están cubiertos:
+
+- **Fidelidad a la regla del profesor, no a la bibliografía.** El requisito general pide coincidir con las fórmulas clásicas verificables contra un caso de bibliografía conocido. En este módulo la referencia autoritativa es el código VBA del Excel del profesor, porque adapta la técnica: las líneas de los cuadrantes van en la mitad del máximo observado, no en el promedio. Donde la teoría de manual y el Excel del profesor difieran, el sistema sigue al Excel.
+- **Tamaño de la matriz.** La matriz y el gráfico deben seguir siendo utilizables, dentro de una sola página sin backend, con el máximo que admite la guía del profesor: 200 variables, es decir una matriz de 200 por 200 con la diagonal bloqueada. No se fija todavía un tiempo de respuesta objetivo [VERIFICAR, punto 2 de la lista de abajo].
+- **Diagonal no editable.** La diagonal debe quedar bloqueada de forma que el estudiante no pueda calificarla, tal como el Excel original.
+
+### Riesgos de desarrollo y puntos [VERIFICAR] de este módulo
+
+Riesgos:
+
+- La base de datos original del profesor (`data-ae.accdb`) está protegida con contraseña y no se pudo abrir. No hay un caso ya resuelto contra el cual validar los cálculos de este módulo. Igual que en el módulo 1, hay que construir casos de prueba propios a partir de las reglas ya verificadas en el código VBA (motricidad como suma de fila, dependencia como suma de columna, líneas en la mitad del máximo, proyección sobre la diagonal).
+- La lógica de la tabla de ranking vive en una consulta guardada dentro de esa misma base protegida, así que no pudo inspeccionarse (ver punto 1 de la lista siguiente).
+
+Puntos [VERIFICAR] para el profesor:
+
+1. **Criterio de orden de la tabla de "ranking estratégico".** No se pudo determinar qué ordena esa tabla: si es simplemente el orden de carga (V1, V2, V3...) o algún criterio de importancia. El cálculo real vive en la consulta guardada `c03_Motricidad_Dependencia` de la base Access protegida con contraseña, que no se pudo abrir.
+2. **Cantidad máxima de variables para el curso.** La guía del profesor dice hasta 200, pero el uso real de un curso probablemente es mucho menor. Falta confirmar el máximo que debe soportar v1, porque de eso depende cuánto pesa el requisito de tamaño de la matriz.
+
+### Fuentes consultadas
+
+Archivos originales del profesor, en `C:\Obsidian\Mi_Segundo_Cerebro\07_gestion_estrategica_software\Modelos Estrategicos\`, revisados directamente por el juez (la sesión de Cowork del Project "Prompt Engineering") y usados aquí como hallazgos verificados:
+
+- `Soft Analisis Estructural.xlsm`: el Excel con macros. De su código VBA salen las reglas de los cuadrantes (mitad del máximo observado), los rótulos del gráfico y la línea de proyección sobre la diagonal.
+- `Que carga usted y que sale solo.pdf`: qué carga el estudiante y qué sale solo; fuente de los nombres en lenguaje llano de los cuadrantes.
+- `Guia de uso - Cargar los Modelos Estrategicos.pdf`: fuente del máximo de 200 variables.
+- `Manual tecnico - Modelos Estrategicos.pdf`.
+- `data-ae.accdb`: base Access protegida con contraseña, que no se pudo abrir. Contiene la consulta `c03_Motricidad_Dependencia`.
+
+Este Inception se escribió a partir de esos hallazgos, tal como los entregó el juez. El constructor no volvió a abrir los archivos originales en esta fase.
