@@ -2105,20 +2105,20 @@ Preguntas de VUP para responder a mano. No las respondió la IA.
 
 **1. ¿Qué fue lo más importante de la especificación?**
 
-Respuesta:
+Respuesta: Haber derivado las reglas de Análisis Estructural del código VBA real del Excel del profesor, no de la teoría MICMAC de los libros. La teoría dice que los cortes van en el promedio; el Excel del profesor los pone en la mitad del máximo. Si la especificación se hubiera basado solo en la teoría, el programa habría calculado algo razonable pero distinto de lo que el curso espera.
 
 **2. ¿Qué harías distinto?**
 
-Respuesta:
+Respuesta: Pediría que la geometría del gráfico, específicamente si dos ejes necesitan la misma escala en píxeles para que una diagonal tenga sentido visual, se revisara en Elaboration II o en Construction I, cuando se diseña el componente, y no en Construction III, cuando ya se prueba. La fórmula estaba bien desde el principio; lo que faltó fue pensar en la geometría de la pantalla al mismo tiempo que en la fórmula.
 
 **3. ¿Qué te sorprendió de cómo la IA implementó los requisitos?**
 
-Respuesta:
+Respuesta: Que el error más interesante de todo el módulo no lo encontró ninguna de las 32 pruebas automatizadas, sino el propio plan de pruebas manual, al simular el gráfico y medir un ángulo con un transportador digital, por así decirlo. El código calculaba los números correctos y aun así el dibujo salía torcido. También me sorprendió que la IA se corrigiera a sí misma varias veces antes de entregarme algo, por ejemplo un error en su propio script de prueba, sin que yo tuviera que encontrarlo.
 
 **4. ¿Cómo ayudó tener un plan de pruebas claro?**
 
-Respuesta:
+Respuesta: Los diez casos de Elaboration I, con números calculados y verificados a mano desde el principio, se volvieron el patrón de referencia para todo lo demás: la implementación, las pruebas automatizadas y después el plan manual reutilizaron la misma matriz de ejemplo. Cualquier desviación tenía un número exacto contra el cual compararse, no una impresión de "se ve bien".
 
 **5. ¿Qué agregarías si siguieras desarrollando el proyecto?**
 
-Respuesta:
+Respuesta: Un botón para reiniciar los datos sin usar la consola del navegador, que quedó pendiente desde el Módulo 1, y resolver con el profesor el criterio de orden del ranking de Análisis Estructural, que nunca se pudo verificar porque la base de datos está protegida.
