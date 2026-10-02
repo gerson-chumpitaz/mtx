@@ -861,10 +861,13 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       // completo sale al pasar el mouse) y de cada punto sale una línea hasta su punto de proyección sobre la diagonal.
       dibujarAE(resultado) {
         const contenedor = contenedorGrafico('AE');
-        const ancho = 640, alto = 520;
+        const alto = 520;
         const margen = { izq: 70, der: 20, arr: 30, aba: 55 };
-        const w = ancho - margen.izq - margen.der;
         const h = alto - margen.arr - margen.aba;
+        // El área de trazado es cuadrada: así los dos ejes tienen los mismos píxeles por unidad, la diagonal de igualdad queda a
+        // 45° y cada línea de proyección le queda perpendicular.
+        const w = h;
+        const ancho = margen.izq + w + margen.der;
         const variables = resultado.variables;
         const maximo = Math.max(1, ...variables.map((v) => Math.max(v.motricidad, v.dependencia)));
         const lado = maximo * 1.1;
