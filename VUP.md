@@ -17,7 +17,7 @@ Para los estudiantes y profesores del curso de Gestión Estratégica, que necesi
 ### Fuera de alcance (v1)
 
 - Replicar el modelo PE-BSC completo (34 hojas: misión, visión, EFI, EFE, objetivos estratégicos, análisis FLOR, ADN de misión y visión, Balanced Scorecard) queda para una fase posterior.
-- Análisis Estructural (estilo MICMAC), Priorización de Iniciativas y Radar Estratégico quedan para fases posteriores.
+- Análisis Estructural (estilo MICMAC) ya se inició como Módulo 2 (ver la sección "Inception — Módulo 2: Análisis Estructural" al final de este documento). Priorización de Iniciativas y Radar Estratégico siguen pendientes para fases posteriores.
 - Persistencia compartida entre varios integrantes de un mismo grupo trabajando a la vez no se resuelve en esta primera versión.
 - Generación de conclusiones asistida por IA, al estilo de Praxio, se evalúa en una fase posterior, no en el primer entregable.
 
