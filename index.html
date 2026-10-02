@@ -54,6 +54,13 @@
     .marcador { fill: #1f4e79; stroke: #fff; stroke-width: 2; }
     .texto-marcador { font-size: 11px; font-weight: 700; fill: #fff; }
     .celda-resaltada { stroke: #1f4e79; stroke-width: 4; }
+    /* Análisis Estructural (AE) */
+    input.celda { width: 2.6rem; text-align: center; padding: 0.2rem 0.1rem; font: inherit; border: 1px solid #9aa5b1; border-radius: 3px; }
+    .diagonal { display: block; width: 2.6rem; text-align: center; color: #9aa5b1; background: #eef2f6; }
+    .q-independientes { fill: #d4edda; } .q-ambiguas { fill: #fff3cd; } .q-autonomas { fill: #d1ecf1; } .q-dependientes { fill: #f8d7da; }
+    .linea-proyeccion { stroke: #7b8794; stroke-width: 1; stroke-dasharray: 4 3; }
+    .diagonal-igualdad { stroke: #52606d; stroke-width: 1; stroke-dasharray: 2 4; fill: none; }
+    .linea-corte { stroke: #52606d; stroke-width: 1.5; stroke-dasharray: 6 4; }
   </style>
 </head>
 <body>
@@ -67,6 +74,7 @@
       <button type="button" data-accion="navegar" data-matriz="PEYEA">PEYEA</button>
       <button type="button" data-accion="navegar" data-matriz="MIE">MIE</button>
       <button type="button" data-accion="navegar" data-matriz="GE">GE</button>
+      <button type="button" data-accion="navegar" data-matriz="AE" title="Análisis Estructural">AE</button>
     </nav>
     <button id="btn-exportar" type="button" data-accion="exportar">Exportar a Excel</button>
   </header>
@@ -127,6 +135,14 @@
       <div class="resultados"></div>
       <div class="grafico"></div>
     </section>
+
+    <section id="matriz-ae" class="matriz" data-matriz="AE" hidden>
+      <h2>AE</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
   </main>
 
   <script id="sheetjs">
@@ -169,7 +185,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     // Los seis objetos conservan exactamente las firmas del esqueleto de Construction I.
     // ---------------------------------------------------------------------------
 
-    const MATRICES = ['BCG', 'EFI', 'EFE', 'MPC', 'PEYEA', 'MIE', 'GE'];
+    const MATRICES = ['BCG', 'EFI', 'EFE', 'MPC', 'PEYEA', 'MIE', 'GE', 'AE'];
     const CLAVE_ALMACENAMIENTO = 'mtx.estado';
     const VERSION_ESTADO = 1;
     const TOLERANCIA_PESOS = 0.001;             // Elaboration I, prueba 2.4
@@ -210,6 +226,12 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 
     function valorDeFactor(factor) {
       return aNumero(factor !== null && typeof factor === 'object' ? factor.valor : factor);
+    }
+
+    // AE: una variable llega como texto (su nombre) o como objeto { nombre, marca }. Sin nombre se llama V1, V2, V3...
+    function nombreVariableAE(variable, indice) {
+      const nombre = variable !== null && typeof variable === 'object' ? variable.nombre : variable;
+      return typeof nombre === 'string' && nombre.trim() !== '' ? nombre.trim() : 'V' + (indice + 1);
     }
 
     // ---------------------------------------------------------------------------
@@ -346,6 +368,52 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       });
     }
 
+    // AE: las celdas fuera de la diagonal, fila por fila. Son las únicas que el estudiante califica.
+    function celdasFueraDeDiagonalAE(datos) {
+      const matriz = datos !== null && typeof datos === 'object' && Array.isArray(datos.matriz) ? datos.matriz : [];
+      const celdas = [];
+      matriz.forEach((fila, i) => {
+        if (Array.isArray(fila)) fila.forEach((valor, j) => { if (i !== j) celdas.push(valor); });
+      });
+      return celdas;
+    }
+
+    function calificacionAEValida(valor) {
+      return Validador.validarRango(valor, 0, 4) && Number.isInteger(aNumero(valor));
+    }
+
+    // AE: mínimo de dos variables, matriz cuadrada y calificaciones enteras de 0 a 4. La diagonal no cuenta como campo vacío
+    // (validar solo le pasa a validarCamposVacios las celdas fuera de la diagonal).
+    // [VERIFICAR] Elaboration I del Módulo 2: si una calificación con decimales (por ejemplo 2.5) se rechaza. Aquí sí, como en EFI, EFE y MPC.
+    const MAX_ERRORES_CELDAS_AE = 20;
+
+    function erroresAE(datos, errores) {
+      const variables = datos.variables;
+      const matriz = datos.matriz;
+      if (!Array.isArray(variables) || variables.length < 2) {
+        errores.push('Ingrese al menos dos variables.');
+        return;
+      }
+      const cuadrada = Array.isArray(matriz) && matriz.length === variables.length &&
+        matriz.every((fila) => Array.isArray(fila) && fila.length === variables.length);
+      if (!cuadrada) {
+        errores.push('La matriz de influencias no coincide con la cantidad de variables.');
+        return;
+      }
+      let fuera = 0;
+      matriz.forEach((fila, i) => fila.forEach((valor, j) => {
+        if (i === j || esVacio(valor) || calificacionAEValida(valor)) return;
+        fuera++;
+        if (fuera <= MAX_ERRORES_CELDAS_AE) {
+          errores.push('Calificación de ' + nombreVariableAE(variables[i], i) + ' sobre ' + nombreVariableAE(variables[j], j) +
+            ': debe ser un número entero entre 0 y 4.');
+        }
+      }));
+      if (fuera > MAX_ERRORES_CELDAS_AE) {
+        errores.push('Hay ' + (fuera - MAX_ERRORES_CELDAS_AE) + ' calificaciones más fuera del rango de 0 a 4.');
+      }
+    }
+
     const Validador = {
       validar(matriz, datos) {
         if (!MATRICES.includes(matriz)) {
@@ -358,11 +426,13 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           return { valido: false, errores: ['No hay datos para validar.'] };
         }
         const errores = [];
-        if (!Validador.validarCamposVacios(datos)) {
+        // En AE se revisan solo las celdas fuera de la diagonal: la diagonal es null por diseño y las marcas pueden ser null.
+        if (!Validador.validarCamposVacios(matriz === 'AE' ? celdasFueraDeDiagonalAE(datos) : datos)) {
           errores.push('Hay campos vacíos: complete todos los campos antes de calcular.');
         }
         switch (matriz) {
           case 'BCG': erroresBCG(datos, errores); break;
+          case 'AE': erroresAE(datos, errores); break;
           case 'EFI':
           case 'EFE': erroresPonderados(datos, errores); break;
           case 'MPC': erroresMPC(datos, errores); break;
@@ -450,6 +520,17 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       if (valor < 2) return 2;
       if (valor < 3) return 1;
       return 0;
+    }
+
+    function clasificarAE(motricidad, dependencia, corteY, corteX) {
+      // Elaboration I del Módulo 2 (corregida): un valor exactamente en el corte cuenta como alto en ese eje.
+      // [VERIFICAR] con el profesor, igual que el umbral del BCG.
+      const altaMotricidad = motricidad >= corteY;
+      const altaDependencia = dependencia >= corteX;
+      if (altaMotricidad && !altaDependencia) return 'INDEPENDIENTES';
+      if (altaMotricidad && altaDependencia) return 'AMBIGUAS';
+      if (!altaMotricidad && !altaDependencia) return 'AUTONOMAS';
+      return 'DEPENDIENTES';
     }
 
     const MotorCalculo = {
@@ -562,6 +643,40 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         // Pendiente: la Historia 6 no define el origen, la escala ni el punto de corte de los ejes.
         // La interfaz no llama a este método; si alguien lo llama, falla de forma explícita.
         throw new Error('ubicarGE: ' + MENSAJE_GE_PENDIENTE);
+      },
+
+      // variables: lista de nombres o de objetos { nombre, marca } (marca "SI", "NO" o null). matriz[i][j] es cuánto influye la
+      // variable i sobre la j; la diagonal se ignora. Devuelve las variables en el mismo orden de entrada (orden de carga),
+      // sin reordenar por ningún valor calculado.
+      calcularAE(variables, matriz) {
+        const motricidades = variables.map((v, i) =>
+          redondear(matriz[i].reduce((suma, celda, j) => (i === j ? suma : suma + aNumero(celda)), 0), 6));
+        const dependencias = variables.map((v, j) =>
+          redondear(matriz.reduce((suma, fila, i) => (i === j ? suma : suma + aNumero(fila[j])), 0), 6));
+        const corteY = variables.length > 0 ? redondear(Math.max(...motricidades) / 2, 6) : 0;
+        const corteX = variables.length > 0 ? redondear(Math.max(...dependencias) / 2, 6) : 0;
+        return {
+          corteY,
+          corteX,
+          variables: variables.map((v, i) => {
+            const motricidad = motricidades[i];
+            const dependencia = dependencias[i];
+            return {
+              nombre: nombreVariableAE(v, i),
+              motricidad,
+              dependencia,
+              cuadrante: clasificarAE(motricidad, dependencia, corteY, corteX),
+              // (x) es el desplazamiento con signo y (y) la distancia real hasta el punto de proyección sobre la diagonal.
+              proyeccion: {
+                x: redondear((motricidad - dependencia) / 2, 6),
+                y: redondear(Math.abs(dependencia - motricidad) / Math.SQRT2, 6)
+              },
+              // Punto de la diagonal de igualdad (mismo valor en los dos ejes): solo se dibuja, no es un dato del usuario.
+              puntoProyeccion: redondear((dependencia + motricidad) / 2, 6),
+              marca: v !== null && typeof v === 'object' && (v.marca === 'SI' || v.marca === 'NO') ? v.marca : null
+            };
+          })
+        };
       }
     };
 
@@ -739,6 +854,68 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       dibujarGE(resultado) {
         // Pendiente: depende de la definición de la Historia 6. La interfaz no llama a este método.
         throw new Error('dibujarGE: ' + MENSAJE_GE_PENDIENTE);
+      },
+
+      // Plano de AE: eje X = dependencia, eje Y = motricidad, con la misma escala en los dos ejes para que la diagonal de
+      // igualdad quede a 45°. Las líneas divisorias van en corteX y corteY. Cada variable se rotula V1, V2, V3... (el nombre
+      // completo sale al pasar el mouse) y de cada punto sale una línea hasta su punto de proyección sobre la diagonal.
+      dibujarAE(resultado) {
+        const contenedor = contenedorGrafico('AE');
+        const ancho = 640, alto = 520;
+        const margen = { izq: 70, der: 20, arr: 30, aba: 55 };
+        const w = ancho - margen.izq - margen.der;
+        const h = alto - margen.arr - margen.aba;
+        const variables = resultado.variables;
+        const maximo = Math.max(1, ...variables.map((v) => Math.max(v.motricidad, v.dependencia)));
+        const lado = maximo * 1.1;
+        const px = (dependencia) => margen.izq + (dependencia / lado) * w;
+        const py = (motricidad) => margen.arr + (1 - motricidad / lado) * h;
+        const x0 = margen.izq, x1 = margen.izq + w, y0 = margen.arr, y1 = margen.arr + h;
+        const cx = px(resultado.corteX), cy = py(resultado.corteY);
+
+        const nodos = [
+          svg('rect', { x: x0, y: y0, width: cx - x0, height: cy - y0, class: 'q-independientes' }),
+          svg('rect', { x: cx, y: y0, width: x1 - cx, height: cy - y0, class: 'q-ambiguas' }),
+          svg('rect', { x: x0, y: cy, width: cx - x0, height: y1 - cy, class: 'q-autonomas' }),
+          svg('rect', { x: cx, y: cy, width: x1 - cx, height: y1 - cy, class: 'q-dependientes' }),
+          svg('rect', { x: x0, y: y0, width: w, height: h, class: 'g-eje' }),
+          svg('line', { x1: px(0), y1: py(0), x2: px(lado), y2: py(lado), class: 'diagonal-igualdad' }),
+          svg('line', { x1: cx, y1: y0, x2: cx, y2: y1, class: 'linea-corte' }),
+          svg('line', { x1: x0, y1: cy, x2: x1, y2: cy, class: 'linea-corte' }),
+          texto(x0 + 8, y0 + 20, 'INDEPENDIENTES', 'g-etiqueta-cuadrante'),
+          texto(x1 - 8, y0 + 20, 'AMBIGUAS', 'g-etiqueta-cuadrante', { 'text-anchor': 'end' }),
+          texto(x0 + 8, y1 - 10, 'AUTONOMAS', 'g-etiqueta-cuadrante'),
+          texto(x1 - 8, y1 - 10, 'DEPENDIENTES', 'g-etiqueta-cuadrante', { 'text-anchor': 'end' }),
+          texto(x0, alto - 32, '0', 'g-texto-tenue', { 'text-anchor': 'middle' }),
+          texto(cx, alto - 32, String(redondear(resultado.corteX, 2)), 'g-texto-tenue', { 'text-anchor': 'middle' }),
+          texto(x1, alto - 32, String(redondear(lado, 1)), 'g-texto-tenue', { 'text-anchor': 'middle' }),
+          texto(margen.izq + w / 2, alto - 10, 'Dependencia (eje X)', 'g-texto-tenue', { 'text-anchor': 'middle' }),
+          texto(x0 - 8, y1 + 4, '0', 'g-texto-tenue', { 'text-anchor': 'end' }),
+          texto(x0 - 8, cy + 4, String(redondear(resultado.corteY, 2)), 'g-texto-tenue', { 'text-anchor': 'end' }),
+          texto(x0 - 8, y0 + 4, String(redondear(lado, 1)), 'g-texto-tenue', { 'text-anchor': 'end' }),
+          texto(14, margen.arr + h / 2, 'Motricidad (eje Y)', 'g-texto-tenue', { 'text-anchor': 'middle', transform: 'rotate(-90 14 ' + (margen.arr + h / 2) + ')' })
+        ];
+
+        // Primero las líneas de proyección (debajo) y después los puntos y sus rótulos.
+        variables.forEach((v) => {
+          nodos.push(svg('line', {
+            x1: px(v.dependencia), y1: py(v.motricidad), x2: px(v.puntoProyeccion), y2: py(v.puntoProyeccion), class: 'linea-proyeccion'
+          }));
+        });
+        variables.forEach((v, i) => {
+          const x = px(v.dependencia);
+          const y = py(v.motricidad);
+          nodos.push(svg('g', {}, [
+            svg('circle', { cx: x, cy: y, r: 6, class: 'punto-vector' }, [
+              svg('title', {}, [v.nombre + ': ' + v.cuadrante + ', motricidad ' + v.motricidad + ', dependencia ' + v.dependencia])
+            ]),
+            texto(x + 9, y - 9, 'V' + (i + 1), 'g-texto')
+          ]));
+        });
+
+        contenedor.append(svg('svg', {
+          viewBox: '0 0 ' + ancho + ' ' + alto, role: 'img', 'aria-label': 'Plano de Análisis Estructural con las variables ubicadas por motricidad y dependencia'
+        }, nodos));
       }
     };
 
@@ -751,6 +928,20 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       if (lista === 'factores' && matriz === 'MPC') return { nombre: '', peso: '' };
       if (lista === 'factores') return { tipo, nombre: '', peso: '', clasificacion: '' };
       return { nombre: '', valor: '' };    // PEYEA: FF, FI, VC, EE
+    }
+
+    // AE: { variables: [nombre...], matriz: [[null, v12, ...], ...], marcas: ["SI" | "NO" | null, ...] }. La diagonal es null
+    // (no aplica); 0 es una calificación hecha ("no influye").
+    function aeVacio() {
+      return { variables: [], matriz: [], marcas: [] };
+    }
+
+    function aeValido(ae) {
+      if (ae === null || typeof ae !== 'object' || !Array.isArray(ae.variables) || !Array.isArray(ae.matriz) || !Array.isArray(ae.marcas)) return false;
+      const n = ae.variables.length;
+      return ae.matriz.length === n && ae.marcas.length === n &&
+        ae.matriz.every((fila, i) => Array.isArray(fila) && fila.length === n && fila[i] === null) &&
+        ae.marcas.every((marca) => marca === null || marca === 'SI' || marca === 'NO');
     }
 
     function estadoVacio() {
@@ -776,7 +967,8 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
             VC: dos(() => filaVacia('PEYEA', 'VC')), EE: dos(() => filaVacia('PEYEA', 'EE'))
           },
           MIE: {},
-          GE: {}
+          GE: {},
+          AE: aeVacio()
         }
       };
     }
@@ -813,7 +1005,10 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           const guardado = localStorage.getItem(CLAVE_ALMACENAMIENTO);
           if (guardado === null) return estadoVacio();
           const estado = JSON.parse(guardado);
-          return esEstadoValido(estado) ? estado : estadoVacio();
+          if (!esEstadoValido(estado)) return estadoVacio();
+          // Un estado guardado antes del módulo AE no trae datos.AE (o lo trae dañado): se completa con AE vacío, sin cambiar la versión.
+          if (!aeValido(estado.datos.AE)) estado.datos.AE = aeVacio();
+          return estado;
         } catch (error) {
           return estadoVacio();    // vacío, corrupto o inaccesible
         }
@@ -875,6 +1070,19 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           salida = [['Resultado', 'Valor'], ['Nivel EFI', capitalizar(resultado.nivelEFI)], ['Nivel EFE', capitalizar(resultado.nivelEFE)],
                     ['Celda', resultado.celda], ['Zona', capitalizar(resultado.zona)]];
           break;
+        case 'AE': {
+          // [VERIFICAR] Elaboration II del Módulo 2, escenario AE-3: estructura provisional, sin poder compararla con el Excel original
+          // (la base Access del profesor está protegida con contraseña). Datos = matriz completa con los nombres de variable en la
+          // fila y la columna de encabezado (diagonal vacía). Resultados = una fila por variable en orden de carga y, al final, los cortes.
+          const nombres = datos.variables.map((v, i) => nombreVariableAE(v, i));
+          entrada = [['Variable'].concat(nombres)]
+            .concat(datos.matriz.map((fila, i) => [nombres[i]].concat(fila.map((celda, j) => (i === j ? null : n(celda))))));
+          salida = [['Variable', 'Motricidad', 'Dependencia', 'Cuadrante', 'Proyección x', 'Proyección y', 'Marca']]
+            .concat(resultado.variables.map((v) => [v.nombre, v.motricidad, v.dependencia, v.cuadrante, v.proyeccion.x, v.proyeccion.y,
+              v.marca === 'SI' ? 'SÍ' : (v.marca === 'NO' ? 'NO' : '')]))
+            .concat([[], ['Corte Y', resultado.corteY], ['Corte X', resultado.corteX]]);
+          break;
+        }
         default:
           throw new Error('No se puede exportar la matriz ' + matriz + '.');
       }
@@ -1032,6 +1240,41 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       return nodos;
     }
 
+    // AE: lista de variables con sus botones y matriz de influencias NxN. Cada celda usa data-campo "matriz.i.j" (fila i, columna j);
+    // la diagonal no tiene campo. Los rótulos de fila y columna son V1, V2, V3... (el nombre completo va en el título).
+    function formularioAE(datos) {
+      const n = datos.variables.length;
+      const etiqueta = (i) => 'V' + (i + 1);
+      const nodos = [el('p', { clase: 'ayuda', texto: 'Análisis Estructural (MICMAC). Cargue las variables de su tema y califique de 0 a 4 cuánto influye cada una (fila) sobre cada otra (columna): 0 no influye, 1 débil, 2 moderada, 3 fuerte, 4 muy fuerte. Una variable no se califica a sí misma. La motricidad, la dependencia y el gráfico salen solos.' })];
+
+      const filasVariables = datos.variables.map((nombre, i) => [
+        etiqueta(i),
+        entrada('variables.' + i, nombre, 'Nombre de la variable ' + (i + 1), true)
+      ]);
+      nodos.push(el('div', { clase: 'grupo' }, [
+        el('h3', { texto: 'Variables' }),
+        n > 0 ? tabla(['Variable', 'Nombre'], filasVariables) : el('p', { clase: 'pista', texto: 'Todavía no hay variables. Agregue al menos dos.' }),
+        botonAgregar('+ Agregar variable', 'variables'),
+        ' ',
+        el('button', { type: 'button', 'data-accion': 'quitar', 'data-lista': 'variables', 'data-indice': n - 1, disabled: n === 0, texto: '− Quitar la última variable' })
+      ]));
+
+      if (n > 0) {
+        const filas = datos.matriz.map((fila, i) => [etiqueta(i)].concat(fila.map((valor, j) => (i === j
+          ? el('span', { clase: 'diagonal', 'aria-label': etiqueta(i) + ' no se califica a sí misma', texto: '—' })
+          : el('input', {
+            type: 'text', inputmode: 'numeric', autocomplete: 'off', clase: 'celda', 'data-campo': 'matriz.' + i + '.' + j, value: valor,
+            'aria-label': 'Influencia de ' + etiqueta(i) + ' sobre ' + etiqueta(j), title: nombreVariableAE(datos.variables[i], i) + ' sobre ' + nombreVariableAE(datos.variables[j], j)
+          })))));
+        nodos.push(el('div', { clase: 'grupo' }, [
+          el('h3', { texto: 'Matriz de influencias directas' }),
+          el('p', { clase: 'pista', texto: 'Cada fila es la variable que influye; cada columna, la variable influida.' }),
+          tabla(['Influye ↓ / sobre →'].concat(datos.variables.map((v, j) => etiqueta(j))), filas)
+        ]));
+      }
+      return nodos;
+    }
+
     function pistaResultados(matriz) {
       if (matriz === 'MIE') return 'La MIE se calcula sola a partir de los totales de EFI y EFE.';
       return 'Complete o corrija los datos para ver el resultado.';
@@ -1100,6 +1343,33 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       ];
     }
 
+    // AE: tabla de ranking (en orden de carga, con la columna SÍ o NO) y hoja Validadas, la lista de solo lectura de las marcadas con SÍ.
+    // [VERIFICAR] Elaboration I del Módulo 2, punto 3: el orden real del ranking no se pudo verificar; aquí es el orden de carga.
+    function resultadosAE(r) {
+      const rotulo = (v, i) => 'V' + (i + 1) + (v.nombre !== 'V' + (i + 1) ? ' (' + v.nombre + ')' : '');
+      const selector = (v, i) => el('select', { 'data-campo': 'marcas.' + i, 'aria-label': '¿Pasa a la siguiente etapa? ' + v.nombre }, [
+        el('option', { value: '', selected: v.marca === null, texto: '—' }),
+        el('option', { value: 'SI', selected: v.marca === 'SI', texto: 'SÍ' }),
+        el('option', { value: 'NO', selected: v.marca === 'NO', texto: 'NO' })
+      ]);
+      const filas = r.variables.map((v, i) => [
+        rotulo(v, i), dosDecimales(v.motricidad), dosDecimales(v.dependencia), v.cuadrante,
+        dosDecimales(v.proyeccion.x), dosDecimales(v.proyeccion.y), selector(v, i)
+      ]);
+      const validadas = r.variables.map((v, i) => ({ v, i })).filter((p) => p.v.marca === 'SI');
+      return [
+        el('p', { texto: 'Corte de motricidad (eje Y): ' + dosDecimales(r.corteY) + '. Corte de dependencia (eje X): ' + dosDecimales(r.corteX) + '.' }),
+        tabla(['Variable', 'Motricidad', 'Dependencia', 'Cuadrante', 'Proyección x', 'Proyección y', '¿Pasa a la siguiente etapa?'], filas),
+        notaEnLimite('La tabla de ranking se muestra en el orden en que se cargaron las variables. El criterio de orden del curso está pendiente de confirmar.'),
+        el('div', { clase: 'grupo' }, [
+          el('h3', { texto: 'Validadas' }),
+          validadas.length > 0
+            ? el('ul', {}, validadas.map((p) => el('li', { texto: rotulo(p.v, p.i) })))
+            : el('p', { clase: 'pista', texto: 'Ninguna variable marcada con SÍ.' })
+        ])
+      ];
+    }
+
     function seccionDe(matriz) {
       return document.getElementById('matriz-' + matriz.toLowerCase());
     }
@@ -1123,6 +1393,12 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         return !esVacio(valor);
       };
       return revisar(datos);
+    }
+
+    // AE: true si el estudiante ya calificó alguna celda fuera de la diagonal. Los nombres y las marcas no cuentan:
+    // sin calificaciones la matriz está "vacía" (con una sola variable no hay celdas que calificar).
+    function hayCalificacionesAE(datos) {
+      return celdasFueraDeDiagonalAE(datos).some((valor) => !esVacio(valor));
     }
 
     // Deriva los totales de EFI y EFE que usa la MIE (escenario 2 de Elaboration II).
@@ -1156,7 +1432,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       } else {
         datos = estado.datos[matriz];
         // [VERIFICAR] Elaboration II, punto 6: una matriz sin ningún dato no muestra errores hasta que el usuario escribe.
-        if (!hayDatosIngresados(datos)) return { estado: 'vacia', errores: [] };
+        if (!(matriz === 'AE' ? hayCalificacionesAE(datos) : hayDatosIngresados(datos))) return { estado: 'vacia', errores: [] };
       }
       const validacion = Validador.validar(matriz, datos);
       if (!validacion.valido) return { estado: 'invalida', errores: validacion.errores, datos };
@@ -1168,6 +1444,10 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         case 'MPC': resultado = MotorCalculo.calcularMPC(datos.factores, datos.empresas); break;
         case 'PEYEA': resultado = MotorCalculo.calcularPEYEA(datos); break;
         case 'MIE': resultado = MotorCalculo.ubicarMIE(datos.totalEFI, datos.totalEFE); break;
+        case 'AE':
+          // Las marcas viajan con cada variable para que el resultado las traiga en el mismo orden de carga.
+          resultado = MotorCalculo.calcularAE(datos.variables.map((nombre, i) => ({ nombre, marca: datos.marcas[i] })), datos.matriz);
+          break;
       }
       return { estado: 'ok', errores: [], datos, resultado };
     }
@@ -1182,6 +1462,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           if (matriz === 'BCG') MotorGraficos.dibujarBCG(evaluacion.resultado);
           else if (matriz === 'PEYEA') MotorGraficos.dibujarPEYEA(evaluacion.resultado);
           else if (matriz === 'MIE') MotorGraficos.dibujarMIE(evaluacion.resultado);
+          else if (matriz === 'AE') MotorGraficos.dibujarAE(evaluacion.resultado);
           // EFI, EFE y MPC no llevan gráfico en esta fase [VERIFICAR] (Elaboration II, punto 3): solo tabla.
           else seccionDe(matriz).querySelector('.grafico').replaceChildren();
         } else {
@@ -1207,7 +1488,13 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 
     function agregarFila(matriz, lista, tipo) {
       const datos = estado.datos[matriz];
-      if (matriz === 'MPC' && lista === 'empresas') {
+      if (matriz === 'AE') {
+        // Una variable nueva suma una fila y una columna al final (diagonal null) y una marca sin definir.
+        datos.variables.push('');
+        datos.matriz.forEach((fila) => fila.push(''));
+        datos.matriz.push(datos.variables.map((v, j) => (j === datos.variables.length - 1 ? null : '')));
+        datos.marcas.push(null);
+      } else if (matriz === 'MPC' && lista === 'empresas') {
         datos.empresas.push({ nombre: 'Competidor ' + datos.empresas.length, clasificaciones: datos.factores.map(() => '') });
       } else if (matriz === 'MPC' && lista === 'factores') {
         datos.factores.push(filaVacia('MPC', 'factores'));
@@ -1219,6 +1506,14 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 
     function quitarFila(matriz, lista, indice) {
       const datos = estado.datos[matriz];
+      if (matriz === 'AE') {
+        // Igual que en las demás matrices, "−" borra siempre el último: la última variable, su fila, su columna y su marca.
+        datos.variables.pop();
+        datos.matriz.pop();
+        datos.matriz.forEach((fila) => fila.pop());
+        datos.marcas.pop();
+        return;
+      }
       if (matriz === 'MPC' && lista === 'empresas' && indice === 0) return;    // "mi empresa" no se quita
       datos[lista].splice(indice, 1);
       if (matriz === 'MPC' && lista === 'factores') datos.empresas.forEach((e) => e.clasificaciones.splice(indice, 1));
@@ -1259,6 +1554,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           case 'PEYEA': nodos = formularioPEYEA(datos); break;
           case 'MIE': nodos = [el('p', { clase: 'ayuda', texto: 'Esta matriz no lleva datos propios: usa los totales de EFI y EFE.' })]; break;
           case 'GE': nodos = []; break;
+          case 'AE': nodos = formularioAE(datos); break;
         }
         contenedor.replaceChildren(...nodos);
       },
@@ -1281,6 +1577,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           case 'MPC': nodos = resultadosMPC(resultado); break;
           case 'PEYEA': nodos = resultadosPEYEA(resultado); break;
           case 'MIE': nodos = resultadosMIE(resultado); break;
+          case 'AE': nodos = resultadosAE(resultado); break;
         }
         contenedor.replaceChildren(...nodos.filter((n) => n !== null));
       },
@@ -1303,7 +1600,9 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           const seccion = objetivo.closest('.matriz');
           if (!campo || !seccion) return;
           const matriz = seccion.dataset.matriz;
-          establecerPorRuta(estado.datos[matriz], campo, objetivo.value);
+          // En AE una marca sin definir se guarda como null (el selector la manda como texto vacío).
+          const sinMarca = matriz === 'AE' && campo.startsWith('marcas.') && objetivo.value === '';
+          establecerPorRuta(estado.datos[matriz], campo, sinMarca ? null : objetivo.value);
           Persistencia.guardar(estado);
           actualizarMatriz(matriz);
           return;
