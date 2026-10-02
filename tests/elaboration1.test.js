@@ -1,5 +1,6 @@
 'use strict';
-// Verifica Validador, MotorCalculo y Exportador de index.html contra las pruebas Given-When-Then de Elaboration I.
+// Verifica Validador, MotorCalculo y Exportador de index.html contra las pruebas Given-When-Then de Elaboration I
+// (Módulo 1: pruebas 1.1 a 6.1; Módulo 2, Análisis Estructural: pruebas AE.1 a AE.10).
 // Uso: node tests/elaboration1.test.js   (sin dependencias; el navegador no interviene)
 
 const fs = require('fs');
@@ -17,10 +18,12 @@ function scriptPorId(id) {
 }
 
 // El script de la app no toca el DOM al cargarse fuera del navegador (document no existe).
+// Además de los seis componentes devuelve evaluarMatriz y fijarEstado, para probar el estado "vacía", "inválida" u "ok" de una
+// matriz con el mismo evaluarMatriz de la aplicación (usa la variable de módulo "estado", que la rutina de arranque no llena en Node).
 function cargarApp(contextoExtra) {
   const contexto = vm.createContext(Object.assign({ console }, contextoExtra || {}));
   return vm.runInContext(
-    scriptPorId('app') + '\n;({ Validador, MotorCalculo, MotorGraficos, Persistencia, Exportador, Vista });',
+    scriptPorId('app') + '\n;({ Validador, MotorCalculo, MotorGraficos, Persistencia, Exportador, Vista, evaluarMatriz, fijarEstado: (nuevo) => { estado = nuevo; } });',
     contexto
   );
 }
@@ -201,6 +204,167 @@ prueba('6.1', 'GE: sin lógica de posicionamiento (falla de forma explícita, si
   esperar(v.valido === false && /pendiente/i.test(v.errores[0]), 'validar("GE") debía indicar que está pendiente');
 });
 
+// Historia: Análisis Estructural (Módulo 2). El arnés verifica el cálculo, la validación y la persistencia; el dibujo de dibujarAE,
+// la diagonal bloqueada en pantalla y el orden de la hoja Validadas se verifican en Construction III, en un navegador.
+const { evaluarMatriz, fijarEstado } = app;
+const nombresAE = (n) => Array.from({ length: n }, (_, i) => 'V' + (i + 1));
+// Como el formulario: las calificaciones se guardan como texto y la diagonal es null.
+const enTextoAE = (matriz) => matriz.map((fila) => fila.map((v) => (v === null ? null : String(v))));
+const datosAE = (matriz, marcas) => ({ variables: nombresAE(matriz.length), matriz: enTextoAE(matriz), marcas: marcas || matriz.map(() => null) });
+const matrizAE1 = () => [[null, 4, 0, 4], [1, null, 2, 4], [0, 1, null, 0], [0, 2, 0, null]];
+const evaluarAE = (datos) => { fijarEstado({ datos: { AE: datos } }); return evaluarMatriz('AE'); };
+// "igual" compara las listas con JSON exacto; para listas de números (proyecciones con decimales) se compara elemento a elemento, con la tolerancia de dos decimales.
+const igualLista = (igual, reales, esperados, detalle) => {
+  igual(reales.length, esperados.length, detalle + ' (cantidad)');
+  esperados.forEach((esperado, i) => igual(reales[i], esperado, detalle + ' [' + i + ']'));
+};
+
+function casoAE(id, descripcion, matriz, esperado) {
+  prueba(id, 'AE: ' + descripcion, (esperar, igual) => {
+    const datos = datosAE(matriz);
+    fila('AE', datos);
+    const r = MotorCalculo.calcularAE(datos.variables, datos.matriz);
+    igual(r.corteY, esperado.corteY, 'corteY');
+    igual(r.corteX, esperado.corteX, 'corteX');
+    igual(r.variables.map((v) => v.motricidad), esperado.motricidad, 'motricidades');
+    igual(r.variables.map((v) => v.dependencia), esperado.dependencia, 'dependencias');
+    igual(r.variables.map((v) => v.cuadrante), esperado.cuadrantes, 'cuadrantes');
+    if (esperado.proyeccionX) {
+      igualLista(igual, r.variables.map((v) => v.proyeccion.x), esperado.proyeccionX, 'proyección x');
+      igualLista(igual, r.variables.map((v) => v.proyeccion.y), esperado.proyeccionY, 'proyección y');
+      igualLista(igual, r.variables.map((v) => v.puntoProyeccion), esperado.punto, 'punto de proyección sobre la diagonal');
+    }
+  });
+}
+
+casoAE('AE.1', 'cuatro variables que cubren los cuatro cuadrantes', matrizAE1(), {
+  corteY: 4, corteX: 4, motricidad: [8, 7, 1, 2], dependencia: [1, 7, 2, 8],
+  cuadrantes: ['INDEPENDIENTES', 'AMBIGUAS', 'AUTONOMAS', 'DEPENDIENTES'],
+  proyeccionX: [3.5, 0, -0.5, -3], proyeccionY: [4.9497, 0, 0.7071, 4.2426], punto: [4.5, 7, 1.5, 5]
+});
+casoAE('AE.2', 'motricidad exactamente en el corte cuenta como alta', [[null, 2, 2], [1, null, 1], [0, 0, null]], {
+  corteY: 2, corteX: 1.5, motricidad: [4, 2, 0], dependencia: [1, 2, 3], cuadrantes: ['INDEPENDIENTES', 'AMBIGUAS', 'DEPENDIENTES']
+});
+casoAE('AE.3', 'dependencia exactamente en el corte cuenta como alta', [[null, 1, 0], [2, null, 0], [2, 1, null]], {
+  corteY: 1.5, corteX: 2, motricidad: [1, 2, 3], dependencia: [4, 2, 0], cuadrantes: ['DEPENDIENTES', 'AMBIGUAS', 'INDEPENDIENTES']
+});
+casoAE('AE.4', 'los cortes están en la mitad del máximo, no en el promedio',
+  [[null, 4, 4, 4], [3, null, 2, 2], [3, 2, null, 2], [3, 2, 2, null]], {
+    corteY: 6, corteX: 4.5, motricidad: [12, 7, 7, 7], dependencia: [9, 8, 8, 8], cuadrantes: ['AMBIGUAS', 'AMBIGUAS', 'AMBIGUAS', 'AMBIGUAS']
+  });
+
+prueba('AE.5', 'AE: la diagonal no cuenta como celda sin calificar (el bloqueo en pantalla se verifica en Construction III)', (esperar) => {
+  // Seis celdas fuera de la diagonal completas y la diagonal en null: la matriz está completa.
+  const completa = datosAE([[null, 1, 2], [3, null, 4], [0, 1, null]]);
+  const v = Validador.validar('AE', completa);
+  esperar(v.valido === true, 'la matriz completa debía validar: ' + v.errores.join(' | '));
+  esperar(evaluarAE(completa).estado === 'ok', 'evaluarMatriz debía calcular con la matriz completa');
+  // El cero es una calificación hecha, no una celda vacía.
+  esperar(Validador.validar('AE', datosAE([[null, 0], [0, null]])).valido === true, 'una matriz de ceros debía ser válida');
+});
+
+prueba('AE.6', 'AE: celdas sin calificar y valores fuera de rango', (esperar, igual) => {
+  const vacia = datosAE([[null, '', ''], ['', null, ''], ['', '', null]]);
+  const e0 = evaluarAE(vacia);
+  igual(e0.estado, 'vacia', 'ninguna celda con valor: estado');
+  igual(e0.errores, [], 'ninguna celda con valor: sin errores');
+  esperar(e0.resultado === undefined, 'ninguna celda con valor: no debía haber resultado');
+
+  const incompleta = datosAE([[null, 1, 2], [3, null, 4], [0, '', null]]);
+  const e1 = evaluarAE(incompleta);
+  igual(e1.estado, 'invalida', 'cinco celdas con valor y una en blanco: estado');
+  esperar(e1.errores.some((m) => /campos vac/i.test(m)), 'debía mostrar el error de campos vacíos: ' + JSON.stringify(e1.errores));
+  esperar(e1.resultado === undefined, 'no debía calcular con la matriz incompleta');
+
+  [5, -1].forEach((valor) => {
+    const fuera = datosAE([[null, 1, 2], [3, null, 4], [0, valor, null]]);
+    const e2 = evaluarAE(fuera);
+    igual(e2.estado, 'invalida', 'valor ' + valor + ': estado');
+    esperar(e2.errores.some((m) => m.includes('0') && m.includes('4')), 'el error debía indicar el rango de 0 a 4: ' + JSON.stringify(e2.errores));
+    esperar(e2.resultado === undefined, 'valor ' + valor + ': no debía calcular');
+  });
+  // Los datos escritos no se pierden al validar.
+  igual(incompleta.matriz[2], ['0', '', null], 'la matriz ingresada se conserva tal cual');
+});
+
+prueba('AE.7', 'AE: mínimo de dos variables', (esperar, igual) => {
+  const una = { variables: ['V1'], matriz: [[null]], marcas: [null] };
+  igual(evaluarAE(una).estado, 'vacia', 'una sola variable: estado');
+  igual(evaluarAE(una).errores, [], 'una sola variable: sin errores');
+  const v = Validador.validar('AE', una);
+  esperar(v.valido === false && v.errores.some((m) => /al menos dos variables/i.test(m)), 'validar debía pedir al menos dos variables');
+
+  const dos = datosAE([[null, 3], [1, null]]);
+  fila('AE', dos);
+  const r = MotorCalculo.calcularAE(dos.variables, dos.matriz);
+  igual(r.corteY, 1.5, 'corteY');
+  igual(r.corteX, 1.5, 'corteX');
+  igual(r.variables.map((x) => x.cuadrante), ['INDEPENDIENTES', 'DEPENDIENTES'], 'cuadrantes');
+  igualLista(igual, r.variables.map((x) => x.proyeccion.x), [1, -1], 'proyección x');
+  igualLista(igual, r.variables.map((x) => x.proyeccion.y), [1.4142, 1.4142], 'proyección y');
+});
+
+prueba('AE.8', 'AE: el resultado conserva el orden de carga y trae las marcas (la hoja Validadas se verifica en Construction III)', (esperar, igual) => {
+  const datos = datosAE(matrizAE1(), ['SI', 'NO', 'NO', 'SI']);
+  const e = evaluarAE(datos);
+  igual(e.estado, 'ok', 'estado');
+  igual(e.resultado.variables.map((v) => v.nombre), ['V1', 'V2', 'V3', 'V4'], 'orden de carga');
+  igual(e.resultado.variables.map((v) => v.marca), ['SI', 'NO', 'NO', 'SI'], 'marcas en el mismo orden');
+  // Un orden por motricidad (V1, V2, V4, V3) o por dependencia (V1, V3, V2, V4) daría otro resultado.
+  igual(e.resultado.variables.map((v) => v.motricidad), [8, 7, 1, 2], 'motricidades en orden de carga, no ordenadas');
+  // Marcar V4 antes que V1 no cambia el orden.
+  const alReves = datosAE(matrizAE1(), ['SI', null, null, 'SI']);
+  igual(evaluarAE(alReves).resultado.variables.map((v) => v.marca), ['SI', null, null, 'SI'], 'marca sin definir se conserva como null');
+});
+
+prueba('AE.9', 'AE: ninguna variable marcada con SÍ', (esperar, igual) => {
+  [[null, null, null, null], ['NO', 'NO', 'NO', 'NO']].forEach((marcas) => {
+    const e = evaluarAE(datosAE(matrizAE1(), marcas));
+    igual(e.estado, 'ok', 'el módulo sigue calculando con marcas ' + JSON.stringify(marcas));
+    esperar(e.resultado.variables.every((v) => v.marca !== 'SI'), 'ninguna variable debía quedar con SÍ');
+  });
+});
+
+prueba('AE.10', 'AE: los datos siguen tras recargar (persistencia y recálculo)', (esperar, igual) => {
+  const almacen = {};
+  const localStorageSimulado = {
+    getItem: (k) => (k in almacen ? almacen[k] : null), setItem: (k, v) => { almacen[k] = String(v); }, removeItem: (k) => { delete almacen[k]; }
+  };
+  const app2 = cargarApp({ localStorage: localStorageSimulado });
+  const p = app2.Persistencia;
+  const inicial = p.cargar();
+  igual(inicial.datos.AE, { variables: [], matriz: [], marcas: [] }, 'AE vacío en un estado nuevo');
+  const datos = datosAE(matrizAE1(), ['SI', 'NO', 'NO', 'SI']);
+  inicial.matrizActiva = 'AE';
+  inicial.datos.AE = datos;
+  esperar(p.guardar(inicial) === true, 'guardar debía devolver true');
+  // "Recargar": otra instancia de la aplicación lee lo guardado.
+  const p2 = cargarApp({ localStorage: localStorageSimulado }).Persistencia;
+  const recuperado = p2.cargar();
+  igual(recuperado.matrizActiva, 'AE', 'matriz activa recuperada');
+  igual(recuperado.datos.AE, datos, 'variables, matriz (diagonal null) y marcas recuperadas');
+  app2.fijarEstado(recuperado);
+  const e = app2.evaluarMatriz('AE');
+  igual(e.estado, 'ok', 'estado tras recargar');
+  igual(e.resultado.variables.map((v) => v.cuadrante), ['INDEPENDIENTES', 'AMBIGUAS', 'AUTONOMAS', 'DEPENDIENTES'], 'mismos cuadrantes de AE.1');
+  igual([e.resultado.corteY, e.resultado.corteX], [4, 4], 'mismos cortes de AE.1');
+  igual(e.resultado.variables.map((v) => v.marca), ['SI', 'NO', 'NO', 'SI'], 'mismas marcas de AE.8');
+
+  // Un estado guardado antes del módulo AE no trae datos.AE: se completa con AE vacío y los demás datos sobreviven.
+  const viejo = p2.cargar();
+  viejo.datos.BCG.divisiones[0].ingresos = '500';
+  delete viejo.datos.AE;
+  almacen['mtx.estado'] = JSON.stringify(viejo);
+  const migrado = p2.cargar();
+  igual(migrado.datos.AE, { variables: [], matriz: [], marcas: [] }, 'estado anterior sin AE: AE vacío');
+  igual(migrado.datos.BCG.divisiones[0].ingresos, '500', 'estado anterior sin AE: los demás datos se conservan');
+  // Un AE dañado (matriz que no es cuadrada, o diagonal con valor) también se reemplaza por AE vacío.
+  const danado = p2.cargar();
+  danado.datos.AE = { variables: ['V1', 'V2'], matriz: [[null, '1']], marcas: [null, null] };
+  almacen['mtx.estado'] = JSON.stringify(danado);
+  igual(p2.cargar().datos.AE, { variables: [], matriz: [], marcas: [] }, 'AE dañado: AE vacío');
+});
+
 // ---------------------------------------------------------------------------
 // Comprobaciones adicionales (no son pruebas de Elaboration I)
 prueba('X.1', 'Firmas: los seis objetos tienen exactamente los métodos del diagrama de clases de Elaboration II', (esperar, igual) => {
@@ -294,6 +458,39 @@ prueba('X.4', 'Exportador: genera las hojas "Datos" y "Resultados" con SheetJS e
   let sinLibreria = false;
   try { app.Exportador.exportarXLSX('EFI', datos, resultado); } catch (error) { sinLibreria = /librería/i.test(error.message); }
   esperar(sinLibreria, 'sin XLSX debía fallar con un mensaje claro');
+});
+
+// Exportador de AE (decisión 3 de Construction II del Módulo 2). Estructura provisional [VERIFICAR]: no se pudo comparar con el Excel original.
+prueba('X.6', 'Exportador AE: hojas "Datos" (matriz completa) y "Resultados" (una fila por variable y los cortes)', (esperar, igual) => {
+  const contexto = vm.createContext({ console });
+  vm.runInContext(scriptPorId('sheetjs'), contexto);
+  let capturado = null;
+  contexto.XLSX.writeFile = (libro, nombre) => { capturado = { libro, nombre }; };
+  const appConXLSX = cargarApp({ XLSX: contexto.XLSX });
+  const datos = datosAE(matrizAE1(), ['SI', 'NO', 'NO', 'SI']);
+  const resultado = MotorCalculo.calcularAE(datos.variables.map((nombre, i) => ({ nombre, marca: datos.marcas[i] })), datos.matriz);
+  igual(appConXLSX.Exportador.exportarXLSX('AE', datos, resultado), 'Mtx-AE.xlsx', 'nombre del archivo');
+  esperar(capturado !== null && capturado.nombre === 'Mtx-AE.xlsx', 'debía llamar a XLSX.writeFile con Mtx-AE.xlsx');
+  igual(capturado.libro.SheetNames, ['Datos', 'Resultados'], 'hojas');
+  const hojaDatos = contexto.XLSX.utils.sheet_to_json(capturado.libro.Sheets.Datos, { header: 1 });
+  const hojaResultados = contexto.XLSX.utils.sheet_to_json(capturado.libro.Sheets.Resultados, { header: 1 });
+  igual(hojaDatos[0], ['Variable', 'V1', 'V2', 'V3', 'V4'], 'encabezado de columnas con los nombres de variable');
+  igual(hojaDatos.length, 5, 'filas de Datos (encabezado + 4 variables)');
+  igual(hojaDatos.map((f) => f[0]).slice(1), ['V1', 'V2', 'V3', 'V4'], 'encabezado de filas con los nombres de variable');
+  matrizAE1().forEach((filaEsperada, i) => filaEsperada.forEach((valor, j) => {
+    const real = hojaDatos[i + 1][j + 1];
+    if (valor === null) esperar(real === undefined || real === null, 'la diagonal debía quedar vacía en (' + i + ', ' + j + ')');
+    else igual(real, valor, 'celda (' + i + ', ' + j + ')');
+  }));
+  igual(hojaResultados[0], ['Variable', 'Motricidad', 'Dependencia', 'Cuadrante', 'Proyección x', 'Proyección y', 'Marca'], 'encabezado de Resultados');
+  igual(hojaResultados[1].slice(0, 4), ['V1', 8, 1, 'INDEPENDIENTES'], 'fila de V1');
+  igual(hojaResultados[1][6], 'SÍ', 'marca de V1');
+  igual(hojaResultados.slice(1, 5).map((f) => f[0]), ['V1', 'V2', 'V3', 'V4'], 'variables en orden de carga');
+  igual(hojaResultados.slice(1, 5).map((f) => f[6]), ['SÍ', 'NO', 'NO', 'SÍ'], 'marcas');
+  igualLista(igual, hojaResultados.slice(1, 5).map((f) => f[4]), [3.5, 0, -0.5, -3], 'proyección x');
+  const corteY = hojaResultados.find((f) => f[0] === 'Corte Y');
+  const corteX = hojaResultados.find((f) => f[0] === 'Corte X');
+  esperar(corteY && corteY[1] === 4 && corteX && corteX[1] === 4, 'las filas finales debían traer Corte Y = 4 y Corte X = 4');
 });
 
 // Persistencia con un localStorage simulado.
