@@ -810,8 +810,8 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
 Correspondencia con Elaboration II:
 
 - Los seis objetos del script son los seis componentes del diagrama de clases, con los mismos nombres y las mismas firmas. `MotorCalculo` y `MotorGraficos` van sin acentos por compatibilidad, igual que en los diagramas.
-- El script no agrega métodos ni componentes nuevos. No hay métodos auxiliares, constantes de configuración ni estado global.
-- Cada `<section class="matriz">` es el contenedor de una de las siete matrices. Sus cuatro `<div>` son las zonas que la Vista llena: `formulario` (`renderFormulario`), `errores` (`mostrarErrores`), `resultados` (`renderResultados`) y `grafico` (donde dibuja el Motor de Gráficos).
+- El script no agrega métodos ni componentes nuevos. No hay métodos auxiliares, constantes de configuración ni estado global, en el esqueleto de este primer módulo (la Construction I del Módulo 2, Análisis Estructural, sí agrega auxiliares privadas: ver esa sección más abajo).
+- Cada `<section class="matriz">` es el contenedor de una de las matrices (siete del Módulo 1 y, desde la Construction I del Módulo 2, una octava para Análisis Estructural). Sus cuatro `<div>` son las zonas que la Vista llena: `formulario` (`renderFormulario`), `errores` (`mostrarErrores`), `resultados` (`renderResultados`) y `grafico` (donde dibuja el Motor de Gráficos).
 - Solo la sección BCG arranca visible. Es un valor inicial provisional del esqueleto, no una decisión de qué matriz se muestra primero [VERIFICAR].
 
 ### Puntos nuevos marcados [VERIFICAR] en esta fase
