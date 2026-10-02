@@ -400,12 +400,14 @@ classDiagram
         +calcularPEYEA(ejes) ResultadoPEYEA
         +ubicarMIE(totalEFI, totalEFE) ResultadoMIE
         +ubicarGE(ejes) ResultadoGE
+        +calcularAE(variables, matriz) ResultadoAE
     }
     class MotorGraficos {
         +dibujarBCG(resultado)
         +dibujarPEYEA(resultado)
         +dibujarMIE(resultado)
         +dibujarGE(resultado)
+        +dibujarAE(resultado)
     }
     class Persistencia {
         +guardar(estado)
@@ -424,6 +426,7 @@ classDiagram
 
 Notas del diagrama de clases:
 
+- `calcularAE` y `dibujarAE` se agregaron en la Elaboration II del Módulo 2 (Análisis Estructural). Las otras firmas no cambian.
 - Las firmas de `ubicarGE` y `dibujarGE` son provisionales: dependen de las decisiones pendientes de la Historia 6 (origen y escala de los ejes) [VERIFICAR].
 - El Motor de Gráficos solo lista los métodos de las matrices con representación visual definida en Elaboration I (BCG, PEYEA, MIE, GE). [VERIFICAR] si EFI, EFE y MPC llevan también una representación gráfica (por ejemplo barras en el MPC) o solo tabla.
 
@@ -1605,3 +1608,133 @@ Puntos [VERIFICAR] de esta fase:
 3. **Criterio de orden de la tabla de ranking y de la hoja Validadas.** Provisional: orden de carga (V1, V2, V3...). El criterio real vive en una consulta de la base Access protegida y no se pudo verificar (punto 1 de la Inception de este módulo).
 4. **Calificaciones con decimales.** La escala es de 0 a 4 con cinco niveles con nombre. Ninguna prueba fija si un valor como 2.5 se rechaza. Se asume que sí, igual que las clasificaciones de EFI, EFE y MPC en el Módulo 1, pero no se fija con una prueba numérica.
 5. **Redacción y estado inicial de las marcas.** Las pruebas AE.6 y AE.9 no fijan la redacción exacta de los mensajes de error ni de una lista vacía, que se definen en el diseño. Tampoco se fija si una variable recién cargada aparece como NO o sin marcar; las pruebas AE.8 y AE.9 no dependen de eso.
+
+## Elaboration II — Módulo 2: Análisis Estructural
+
+Objetivo de la fase: definir qué suma Análisis Estructural a la arquitectura de seis componentes ya fijada en Elaboration II del Módulo 1, con escenarios y diagramas, sin escribir código. Las fórmulas, clasificaciones y reglas de validación ya fijadas en Elaboration I de este módulo (pruebas AE.1 a AE.10) no se reinterpretan aquí; los componentes solo las aplican. Lo que esta fase no resuelve se marca [VERIFICAR] y se consolida al final.
+
+Principios de la arquitectura: se mantienen los del Módulo 1 sin cambios. La Vista es el único orquestador, el Validador y el Motor de Cálculo no dependen del navegador, los datos ingresados se guardan en cada cambio sean válidos o no, y los resultados solo se calculan y muestran cuando la validación pasa. Lo que Análisis Estructural suma a la fuente de verdad: lo que el usuario ingresó son las variables, las calificaciones de la matriz y las marcas SÍ y NO. La motricidad, la dependencia, los cortes, los cuadrantes y las proyecciones se recalculan cuando hacen falta y no se guardan. Las marcas SÍ y NO sí se guardan, porque son datos del estudiante y no se pueden derivar de nada.
+
+### 1. Componentes del framework
+
+No se repite la tabla de los seis componentes del Módulo 1. Solo se agrega lo que Análisis Estructural suma a cada uno.
+
+| Componente | Qué suma Análisis Estructural |
+|---|---|
+| Vista | Ningún método nuevo. Reutiliza `renderFormulario`, `renderResultados` y `despacharEvento` con un octavo valor de matriz, `"AE"`, para la matriz NxN de influencias, la tabla de ranking con sus marcas SÍ y NO y la hoja Validadas (solo lectura). Pregunta abierta para Construction I: si la hoja Validadas necesita su propia función de renderizado o le alcanza `renderResultados` [VERIFICAR]. |
+| Validador | Probablemente reutiliza `validarCamposVacios` y `validarRango` aplicados a las celdas fuera de la diagonal (rango de 0 a 4, y mínimo de dos variables), sin método nuevo. Pregunta abierta para Construction I, no se decide aquí [VERIFICAR]. |
+| Motor de Cálculo | Método nuevo `calcularAE(variables, matriz)`. Aplica exactamente las fórmulas ya fijadas y probadas en Elaboration I: motricidad (suma de la fila), dependencia (suma de la columna), corteY y corteX (mitad del máximo observado), cuadrante (un valor exactamente en el corte cuenta como alta) y proyección (x) e (y). Devuelve un `ResultadoAE` con esos valores por variable y los dos cortes. |
+| Motor de Gráficos | Método nuevo `dibujarAE(resultado)`. Dibuja el plano con la dependencia en el eje X y la motricidad en el eje Y, las dos líneas de corte, los cuatro cuadrantes rotulados (INDEPENDIENTES, AMBIGUAS, AUTONOMAS y DEPENDIENTES), el punto de cada variable y su línea hasta el punto de proyección sobre la diagonal de igualdad. |
+| Persistencia | Sin cambios: se reutiliza tal cual. Guarda las variables, la matriz y las marcas como parte del estado de la sesión. |
+| Exportador | Sin cambios: se reutiliza tal cual. Qué contiene el archivo de este módulo queda abierto en el escenario AE-3. |
+
+Consecuencia que debe recogerse en Construction I de este módulo: la decisión de Construction I del Módulo 1 dice que `matriz` es siempre uno de siete strings (`"BCG"`, `"EFI"`, `"EFE"`, `"MPC"`, `"PEYEA"`, `"MIE"`, `"GE"`). Con `"AE"` pasan a ser ocho, por lo que esa frase quedará desactualizada y pedirá un commit de sincronización en esa fase, igual que en fases anteriores. Tampoco se decide aquí cómo se acomodan los datos de este módulo en el estado guardado ni si el formato guardado cambia de versión [VERIFICAR].
+
+Relación con las pruebas de Elaboration I de este módulo. Se usa una tabla aparte de la del Módulo 1, porque aquí las pruebas se cruzan contra los dos métodos nuevos y no contra componentes completos:
+
+| Prueba | `calcularAE` | `dibujarAE` | Otros componentes que la ejercitan |
+|---|---|---|---|
+| AE.1 | Motricidad, dependencia, cortes, cuadrantes y proyecciones de las cuatro variables | Los cuatro cuadrantes rotulados, cuatro puntos y cuatro líneas de proyección | Vista |
+| AE.2 | Cuadrante de V2 con motricidad exactamente en corteY | Posición del punto de V2 en AMBIGUAS | |
+| AE.3 | Cuadrante de V2 con dependencia exactamente en corteX | Posición del punto de V2 en AMBIGUAS | |
+| AE.4 | Cortes en la mitad del máximo y no en el promedio | Posición de las líneas de corte en el plano | |
+| AE.5 | No se invoca | No se invoca | Vista (las celdas de la diagonal no se pueden escribir) y Validador (la diagonal no cuenta como celda sin calificar) |
+| AE.6 | No se invoca | No se invoca | Validador (matriz incompleta y valor fuera de rango) y Vista (muestra el error o no muestra nada) |
+| AE.7 | Cálculo con dos variables | Gráfico con dos variables | Validador y Vista (una sola variable se trata como vacía) |
+| AE.8 | No interviene | No interviene | Vista (tabla de ranking y hoja Validadas en orden de carga) y Persistencia (guarda las marcas) |
+| AE.9 | No interviene | No interviene | Vista (hoja Validadas sin variables) |
+| AE.10 | Recalcula los mismos resultados de AE.1 | Vuelve a dibujar el mismo gráfico | Persistencia, Validador y Vista |
+
+### 2. Escenarios (plays)
+
+**Escenario AE-1: flujo principal, de la carga a la selección**
+
+El estudiante abre el módulo de Análisis Estructural y carga las cuatro variables V1 a V4. Con cada cambio, la Vista pide a la Persistencia que guarde el estado. Cuando completa las doce celdas fuera de la diagonal con las calificaciones de la prueba AE.1, la Vista pasa los datos al Validador, que confirma que todas las celdas tienen un valor de 0 a 4 y que hay al menos dos variables. La Vista pasa las variables y la matriz al Motor de Cálculo, que devuelve para cada variable su motricidad y dependencia (8 y 1, 7 y 7, 1 y 2, 2 y 8), los cortes (4 y 4), el cuadrante (INDEPENDIENTES, AMBIGUAS, AUTONOMAS, DEPENDIENTES) y la proyección. La Vista entrega ese resultado al Motor de Gráficos, que dibuja el plano con los cuatro cuadrantes, los cuatro puntos y sus líneas de proyección, y muestra la tabla de ranking en orden de carga. Después el estudiante marca V1 y V4 con SÍ y V2 y V3 con NO, como en la prueba AE.8. Cada marca la guarda la Persistencia y la Vista actualiza la hoja Validadas, que lista V1 y V4. Las marcas no cambian ningún resultado calculado, así que en ese paso no se invocan el Validador ni los motores.
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+
+**Escenario AE-2: rechazo por matriz incompleta**
+
+El estudiante tiene tres variables cargadas y completa solo cinco de las seis celdas fuera de la diagonal, como en la prueba AE.6. La Vista guarda el estado en la Persistencia y pasa los datos al Validador, que detecta una celda sin calificar y devuelve el error. La Vista muestra el error y no muestra resultados ni gráfico. El Motor de Cálculo y el Motor de Gráficos no se invocan. Con ninguna celda escrita, o con una sola variable, la Vista sigue el mismo camino pero no muestra ningún error, porque la matriz está en estado "vacía". Con un valor fuera de 0 a 4 (por ejemplo 5), el Validador devuelve un error de rango y el flujo se corta igual.
+Componentes: Vista, Persistencia, Validador.
+Este escenario cubre las pruebas AE.6 y la parte de AE.7 con una sola variable. Tiene el mismo patrón que el escenario 3 del Módulo 1: el flujo se corta en la validación.
+
+**Escenario AE-3: exportación a Excel**
+
+Con el análisis de AE.1 ya calculado y válido, el usuario pulsa "Exportar". La Vista pasa los datos al Validador, que confirma que sean válidos. La Vista pide el resultado al Motor de Cálculo y entrega al Exportador el módulo, los datos ingresados y el resultado. El Exportador genera el archivo .xlsx con la librería embebida y la Vista dispara la descarga, todo sin conexión a internet. Si los datos no son válidos, la Vista muestra los errores y no llama al Exportador, como en el escenario 4 del Módulo 1.
+Componentes: Vista, Validador, Motor de Cálculo, Exportador.
+[VERIFICAR] qué contiene la hoja de datos de una matriz NxN: la matriz de influencias cruda (N filas por N columnas, con la diagonal vacía), los resultados por variable (motricidad, dependencia, cuadrante y proyección), o las dos cosas en hojas separadas. Falta decidir también si el archivo incluye las marcas SÍ y NO y la lista de Validadas. Como referencia, el Módulo 1 exporta dos hojas, "Datos" y "Resultados", con solo valores y sin imagen del gráfico, de forma provisional.
+
+**Escenario AE-4: recuperación tras recargar**
+
+El estudiante recarga la página o vuelve a abrir el archivo, con el análisis de AE.1 y las marcas de AE.8 ya guardados. La Vista pide a la Persistencia el estado guardado. Si existe, la Vista vuelve a llenar las variables, la matriz y las marcas, y el Validador revisa los datos. Como la matriz está completa y es válida, el Motor de Cálculo recalcula los mismos resultados de AE.1 y el Motor de Gráficos vuelve a dibujar el plano; la hoja Validadas vuelve a listar V1 y V4. Si la matriz estuviera incompleta, se muestran sus datos sin resultado. Si el almacenamiento está vacío, corrupto o inaccesible, la Persistencia devuelve un estado vacío y la Vista muestra el módulo en blanco.
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+Este escenario cubre la prueba AE.10. Aplica a este módulo los mismos puntos abiertos del escenario 5 del Módulo 1 (mensajes de error de una matriz incompleta tras la recarga y aviso al descartar un estado corrupto), sin agregar otros.
+
+Cobertura de componentes por escenario:
+
+| Componente | AE-1 | AE-2 | AE-3 | AE-4 |
+|---|---|---|---|---|
+| Vista | sí | sí | sí | sí |
+| Validador | sí | sí | sí | sí |
+| Motor de Cálculo | sí | no | sí | sí |
+| Motor de Gráficos | sí | no | no | sí |
+| Persistencia | sí | sí | no | sí |
+| Exportador | no | no | sí | no |
+
+### 3. Diagramas
+
+**Diagrama de clases**
+
+No se crea un diagrama nuevo. Se editó el `classDiagram` de la Elaboration II del Módulo 1 (arriba, en este documento) para agregar `+calcularAE(variables, matriz) ResultadoAE` a `MotorCalculo` y `+dibujarAE(resultado)` a `MotorGraficos`. Las demás clases y relaciones no cambian.
+
+**Diagrama de secuencia del escenario AE-1: flujo principal**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    participant MC as Motor de Cálculo
+    participant MG as Motor de Gráficos
+    U->>V: carga las variables y califica la matriz de influencias
+    V->>P: guardar(estado)
+    V->>VA: validar(AE, datos)
+    VA-->>V: datos válidos
+    V->>MC: calcularAE(variables, matriz)
+    MC-->>V: motricidad, dependencia, cortes, cuadrantes y proyecciones
+    V->>MG: dibujarAE(resultado)
+    MG-->>V: plano con cuadrantes, puntos y líneas de proyección
+    V-->>U: muestra resultados, gráfico y tabla de ranking
+    U->>V: marca SÍ o NO en cada variable
+    V->>P: guardar(estado)
+    V-->>U: actualiza la hoja Validadas
+```
+
+**Diagrama de secuencia del escenario AE-2: rechazo por matriz incompleta**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    U->>V: deja una celda de la matriz sin calificar
+    V->>P: guardar(estado)
+    V->>VA: validar(AE, datos)
+    VA-->>V: error, hay celdas sin calificar
+    V-->>U: muestra el error sin resultados ni gráfico
+```
+
+Los escenarios AE-3 y AE-4 no tienen diagrama propio: siguen la misma secuencia que los escenarios 4 y 5 del Módulo 1, con el valor de matriz `"AE"` y las llamadas `calcularAE` y `dibujarAE` en lugar de las de EFI.
+
+### Puntos nuevos marcados [VERIFICAR] en esta fase
+
+1. Hoja Validadas: si necesita su propia función de renderizado en la Vista o le alcanza `renderResultados`. Se decide en Construction I.
+2. Validador: si reutiliza `validarCamposVacios` y `validarRango` sobre las celdas fuera de la diagonal o necesita un método nuevo. Se decide en Construction I.
+3. Estructura del Excel exportado del módulo: matriz cruda, resultados por variable o ambas en hojas separadas, y si incluye las marcas SÍ y NO y la lista de Validadas.
+4. Estado guardado: cómo se acomodan variables, matriz y marcas, y si el formato guardado cambia de versión. Se decide en Construction I, junto con la sincronización de la frase de las siete siglas.
+5. Los puntos abiertos de recuperación de sesión del Módulo 1 (mensajes de error de una matriz incompleta y aviso al descartar un estado corrupto) aplican también a este módulo.
+6. Siguen abiertos los puntos de Elaboration I de este módulo: el orden provisional del ranking, las calificaciones con decimales y la redacción de mensajes.
