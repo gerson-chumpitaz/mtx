@@ -1890,3 +1890,146 @@ Además se recorrió el módulo en Chrome sin interfaz con eventos reales del DO
 - El bloqueo de la diagonal en pantalla (prueba AE.5) y el orden de renderizado de la tabla de ranking y de la hoja Validadas (AE.8 y AE.9).
 - Rendimiento con una matriz grande (hasta 200 variables, 40 000 celdas): no se midió. Cada tecla recalcula y redibuja todo el módulo.
 - Navegadores distintos de Chrome, el archivo descargado de internet y la exportación abierta en Excel: nada de esto se verificó en esta fase.
+
+## Construction III — Módulo 2: Análisis Estructural
+
+Objetivo de la fase: dejar un plan de pruebas manual para Análisis Estructural, pensado para que una persona lo siga con el navegador real, el mouse y el teclado. Esta fase no escribe ni modifica código de la aplicación. Cubre lo que Construction II dejó pendiente: el resultado visual de `dibujarAE`, el bloqueo de la diagonal en pantalla, el orden de la tabla de ranking y de la hoja Validadas, la experiencia con una matriz grande, Edge y Firefox, y la apertura del archivo exportado en un programa de hojas de cálculo. Lo que es propiedad del archivo completo (abre sin instalar, no pide red, funciona sin conexión) ya está en el bloque 5 de la Construction III del Módulo 1 y no se repite.
+
+Estado del plan: ningún caso ha sido ejecutado por una persona, por eso todas las casillas "¿Pasó?" están en blanco. Los textos y números de "Resultado esperado" no se calcularon a mano: se obtuvieron recorriendo los mismos pasos sobre `index.html` en Chrome sin interfaz, con eventos reales del DOM (clics, escritura en los campos, cambio de los selectores, botón de exportar, recarga de la página y un script de consola), sobre una copia temporal fuera del repositorio. Los textos salen del DOM, la geometría del gráfico sale de los elementos SVG (posición de cada punto, línea y rótulo) y el contenido del archivo exportado sale del libro que genera SheetJS, leído antes de que el navegador lo descargue. Eso no reemplaza la ejecución real. Lo que la simulación no pudo reproducir queda marcado en cada caso: el aspecto del mouse y el retraso del texto emergente, la tecla Tab real, Edge y Firefox, la apertura en un programa de hojas de cálculo y la sensación de velocidad con la matriz grande.
+
+### 0. Convenciones propias de Análisis Estructural
+
+Valen las convenciones de la sección 0 de la Construction III del Módulo 1 (abrir la aplicación, cómo leer los resultados, el aviso ámbar y el recuadro rojo de errores, y la casilla "¿Pasó?"). Se agregan o se precisan estas:
+
+- **Reinicio de datos (RD):** el mismo de siempre: F12, pestaña "Consola", escribir `localStorage.removeItem('mtx.estado'); location.reload()` y pulsar Enter. Después de un RD se abre en BCG.
+- **Estado limpio de AE:** cero variables, no dos filas como las demás matrices. La sección AE muestra "Todavía no hay variables. Agregue al menos dos." y los botones "+ Agregar variable" y "− Quitar la última variable". Este último está deshabilitado mientras no haya variables.
+- **Botones:** "+ Agregar variable" suma una variable al final, con su fila y su columna en la matriz. "− Quitar la última variable" borra siempre la última, nunca una del medio.
+- **Rótulos:** las filas y columnas de la matriz y los puntos del gráfico se llaman V1, V2, V3... según el orden de carga. El nombre que escribe la persona se ve en la tabla de variables, en la tabla de ranking (por ejemplo "V1 (Clima)") y en el texto emergente de cada punto del gráfico.
+- **Diagonal:** la celda de la diagonal (una variable sobre sí misma) se ve atenuada, con un guion, y no acepta foco ni escritura. Las demás celdas son campos de texto de ancho corto.
+- **Selector de marca:** cada fila de la tabla de ranking tiene un selector con tres opciones: "—" (sin definir), "SÍ" y "NO".
+- **Aviso ámbar de AE:** siempre que hay resultado, debajo de la tabla de ranking aparece el recuadro ámbar "La tabla de ranking se muestra en el orden en que se cargaron las variables. El criterio de orden del curso está pendiente de confirmar." Es el comportamiento esperado, no un fallo.
+- **Cómo cargar los datos:** escribir en la matriz con la tecla Tab para saltar de una celda a la siguiente, fila por fila. Tab salta la diagonal. Los números se escriben como texto, sin decimales.
+
+### 1. Datos de prueba
+
+**D-AE1: las cuatro variables de la prueba AE.1**, con estos nombres y esta matriz (la fila influye sobre la columna):
+
+| Variable | Nombre | V1 | V2 | V3 | V4 |
+|---|---|---|---|---|---|
+| V1 | Clima | — | 4 | 0 | 4 |
+| V2 | Precio | 1 | — | 2 | 4 |
+| V3 | Costos | 0 | 1 | — | 0 |
+| V4 | Demanda | 0 | 2 | 0 | — |
+
+**Cargar D-AE1 (procedimiento CA), partiendo de un RD:**
+
+1. Pulse "AE" en la navegación.
+2. Pulse "+ Agregar variable" cuatro veces.
+3. En la columna "Nombre" de la tabla de variables escriba Clima, Precio, Costos y Demanda, en ese orden.
+4. Haga clic en la primera celda de la matriz (V1 sobre V2) y escriba, con Tab entre celdas: 4, 0, 4 (fila V1); 1, 2, 4 (fila V2); 0, 1, 0 (fila V3); 0, 2, 0 (fila V4).
+
+**D-AE2: secuencia de marcado de CP-70.** Se marcan las variables en un orden distinto al de carga: V4 con SÍ, V3 con SÍ, V2 con NO y, por último, V1 con SÍ.
+
+**D-AE3: script de consola para la matriz grande (CP-77).** Genera 200 variables llamadas "Variable 1" a "Variable 200" con calificaciones enteras al azar de 0 a 4 (diagonal sin valor), las guarda con `Persistencia.guardar` y recarga la página. Pegar en la pestaña "Consola" (si el navegador pide escribir `allow pasting`, hágalo) y pulsar Enter:
+
+```javascript
+(() => {
+  const n = 200;
+  const variables = [], matriz = [], marcas = [];
+  for (let i = 0; i < n; i++) {
+    variables.push('Variable ' + (i + 1));
+    marcas.push(null);
+    matriz.push(Array.from({ length: n }, (_, j) => (i === j ? null : String(Math.floor(Math.random() * 5)))));
+  }
+  const guardado = Persistencia.cargar();
+  guardado.matrizActiva = 'AE';
+  guardado.datos.AE = { variables, matriz, marcas };
+  console.log('Guardado:', Persistencia.guardar(guardado));
+  location.reload();
+})();
+```
+
+### 2. Registro de ejecución propio
+
+Se completa antes de empezar. Es adicional al registro de la sección 0 del Módulo 1, que sigue valiendo para los datos del equipo. Aquí se anota el navegador de cada caso, porque CP-75 y CP-76 se hacen en navegadores distintos del resto.
+
+| Dato | Valor |
+|---|---|
+| Persona que ejecuta | |
+| Fecha | |
+| Equipo y versión de Windows | |
+| Ruta del archivo `index.html` probado | |
+| Programa de hojas de cálculo y versión (CP-74) | |
+| Resultado global | |
+
+| Casos | Navegador y versión | Observaciones |
+|---|---|---|
+| CP-61 a CP-74 y CP-77 | | |
+| CP-75 (Edge) | | |
+| CP-76 (Firefox) | | |
+
+### 3. Casos de prueba (CP-61 a CP-77)
+
+Los casos continúan la numeración del Módulo 1 (CP-01 a CP-60). Cada caso parte de un RD, salvo que su precondición diga otra cosa. Las filas de la tabla de ranking se escriben "variable, motricidad, dependencia, cuadrante, proyección x, proyección y"; la columna del selector se indica aparte.
+
+| N.º | Origen | Precondición | Pasos | Resultado esperado | ¿Pasó? |
+|---|---|---|---|---|---|
+| CP-61 | Prueba AE.7 y estado limpio | RD. | 1. Observe la navegación al abrir.<br>2. Pulse "AE". | Hay ocho botones: BCG, EFI, EFE, MPC, PEYEA, MIE, GE y AE, y al abrir está resaltado BCG. Al pulsar AE se ve la sección "AE" con el texto de ayuda que empieza con "Análisis Estructural (MICMAC). Cargue las variables de su tema y califique de 0 a 4…", el título "Variables", el texto "Todavía no hay variables. Agregue al menos dos.", el botón "+ Agregar variable" y el botón "− Quitar la última variable" deshabilitado (atenuado). No hay tabla de matriz, ni recuadro rojo, ni gráfico. En resultados dice "Complete o corrija los datos para ver el resultado." "Exportar a Excel" está habilitado. | ☐ Sí<br>☐ No |
+| CP-62 | Prueba AE.7 (una y cuatro variables) | RD. AE visible. | 1. Pulse "+ Agregar variable" una vez y observe.<br>2. Pulse "+ Agregar variable" tres veces más (cuatro variables). | Con una variable: la tabla de variables muestra la fila V1 con su campo "Nombre"; aparece el título "Matriz de influencias directas" con una sola celda, la de la diagonal, atenuada y con un guion; no hay ninguna celda editable; sin recuadro rojo; resultados "Complete o corrija los datos para ver el resultado."; el botón "− Quitar la última variable" ya está habilitado. Con cuatro variables: la matriz tiene los encabezados "Influye ↓ / sobre →", V1, V2, V3 y V4; 12 celdas editables y 4 celdas de diagonal atenuadas; sin recuadro rojo ni gráfico. | ☐ Sí<br>☐ No |
+| CP-63 | Prueba AE.1 (cálculo) | RD. | 1. Cargue D-AE1 con el procedimiento CA.<br>2. Observe los resultados. | Sin recuadro rojo. Texto: "Corte de motricidad (eje Y): 4.00. Corte de dependencia (eje X): 4.00." Tabla de ranking con los encabezados Variable, Motricidad, Dependencia, Cuadrante, Proyección x, Proyección y y "¿Pasa a la siguiente etapa?", y cuatro filas en este orden: V1 (Clima), 8.00, 1.00, INDEPENDIENTES, 3.50, 4.95; V2 (Precio), 7.00, 7.00, AMBIGUAS, 0.00, 0.00; V3 (Costos), 1.00, 2.00, AUTONOMAS, -0.50, 0.71; V4 (Demanda), 2.00, 8.00, DEPENDIENTES, -3.00, 4.24. El selector de cada fila muestra "—". Debajo, el recuadro ámbar sobre el orden pendiente de confirmar. Después, el título "Validadas" y el texto "Ninguna variable marcada con SÍ." Se dibuja un gráfico. | ☐ Sí<br>☐ No |
+| CP-64 | Prueba AE.1 (gráfico: puntos y cuadrantes) | D-AE1 cargado (CP-63). | 1. Observe el gráfico: los cuatro rótulos de cuadrante y los cuatro puntos. | El plano tiene el eje horizontal rotulado "Dependencia (eje X)" y el vertical "Motricidad (eje Y)", con los valores 0, 4 y 8.8 en cada eje. Los cuadrantes son: arriba a la izquierda INDEPENDIENTES (verde claro), arriba a la derecha AMBIGUAS (amarillo claro), abajo a la izquierda AUTONOMAS (celeste) y abajo a la derecha DEPENDIENTES (rosado). Hay cuatro puntos con los rótulos V1, V2, V3 y V4. Posición aproximada, como porcentaje del ancho desde la izquierda y del alto desde arriba del recuadro: V1 en 11 % y 9 % (cuadrante INDEPENDIENTES, cerca del borde superior); V2 en 80 % y 20 % (AMBIGUAS); V3 en 23 % y 89 % (AUTONOMAS, cerca del borde inferior); V4 en 91 % y 77 % (DEPENDIENTES, cerca del borde derecho). | ☐ Sí<br>☐ No |
+| CP-65 | Prueba AE.1 y AE.4 (gráfico: cortes, diagonal y proyecciones) | D-AE1 cargado (CP-63). | 1. Observe las líneas punteadas del gráfico.<br>2. Fíjese en la línea diagonal y en la línea que sale de cada punto. | Hay dos líneas de corte discontinuas, una vertical y una horizontal, en la mitad del máximo observado (4 en cada eje): la vertical queda en el 45.5 % del ancho desde la izquierda y la horizontal en el 54.5 % del alto desde arriba, es decir, no están en el centro del recuadro. Una diagonal de puntos va de la esquina inferior izquierda a la esquina superior derecha del recuadro: es la diagonal de igualdad, donde motricidad y dependencia valen lo mismo. V2 (7 y 7) está exactamente sobre esa diagonal y su línea de proyección tiene longitud cero, por lo que no se ve. De V1, V3 y V4 sale una línea fina discontinua cuyo extremo toca la diagonal. Ver la observación 1: la inclinación de la diagonal en pantalla es de unos 38°, no de 45°, y las líneas de proyección no se ven perpendiculares a ella. | ☐ Sí<br>☐ No |
+| CP-66 | Prueba AE.1 (nombre completo en el gráfico) | D-AE1 cargado (CP-63). | 1. Deje el cursor quieto sobre el punto V1 durante un par de segundos.<br>2. Repita con V2, V3 y V4. | Aparece un texto emergente con el nombre completo, el cuadrante y los valores. V1: "Clima: INDEPENDIENTES, motricidad 8, dependencia 1". V2: "Precio: AMBIGUAS, motricidad 7, dependencia 7". V3: "Costos: AUTONOMAS, motricidad 1, dependencia 2". V4: "Demanda: DEPENDIENTES, motricidad 2, dependencia 8". Los textos están en el gráfico; que el navegador los muestre, y cuánto tarda, es comportamiento del navegador y no se pudo simular. | ☐ Sí<br>☐ No |
+| CP-67 | Prueba AE.5 (diagonal bloqueada) | D-AE1 cargado (CP-63). | 1. Haga clic en la celda atenuada de V1 sobre V1.<br>2. Intente escribir un 3.<br>3. Repita con las celdas de V2, V3 y V4.<br>4. Haga clic en la celda V1 sobre V4, pulse Tab y observe dónde queda el cursor.<br>5. Haga clic en V2 sobre V1 y pulse Tab una vez. | Ninguna celda de la diagonal acepta foco ni escritura: no aparece cursor, no cambia ningún valor y los resultados no cambian (siguen los de CP-63). Tab no se detiene en la diagonal: desde V1 sobre V4 pasa a V2 sobre V1, y desde V2 sobre V1 pasa a V2 sobre V3 (se salta V2 sobre V2). En la simulación se comprobó que las celdas de la diagonal no son campos y no son enfocables; la tecla Tab real y el puntero no se pudieron simular. | ☐ Sí<br>☐ No |
+| CP-68 | Prueba AE.6 (celdas sin calificar y valores fuera de rango) | RD. AE con cuatro variables y los nombres de D-AE1 (pasos 1 a 3 de CA). | 1. Escriba solo un 4 en V1 sobre V2.<br>2. Complete el resto de D-AE1 menos V4 sobre V3, que queda en blanco.<br>3. Escriba 5 en V4 sobre V3.<br>4. Cámbielo por -1.<br>5. Cámbielo por 2,5.<br>6. Cámbielo por 0. | Pasos 1 y 2: recuadro rojo con "Hay campos vacíos: complete todos los campos antes de calcular.", resultados "Complete o corrija los datos para ver el resultado." y sin gráfico. Pasos 3, 4 y 5: recuadro rojo con "Calificación de Demanda sobre Costos: debe ser un número entero entre 0 y 4.", sin tabla ni gráfico. Paso 6: el error desaparece y vuelve el resultado de CP-63 con su gráfico. Lo escrito se conserva en todos los pasos. | ☐ Sí<br>☐ No |
+| CP-69 | Escenario AE-1 (agregar y quitar variables) | D-AE1 cargado (CP-63). | 1. Pulse "− Quitar la última variable" una vez.<br>2. Pulse "+ Agregar variable" una vez. | Paso 1: quedan tres variables (Clima, Precio y Costos) y la matriz de tres por tres con los mismos valores (4, 0 / 1, 2 / 0, 1); 6 celdas editables; sin recuadro rojo. "Corte de motricidad (eje Y): 2.00. Corte de dependencia (eje X): 2.50." Tabla de ranking de tres filas: V1 (Clima), 4.00, 1.00, INDEPENDIENTES, 1.50, 2.12; V2 (Precio), 3.00, 5.00, AMBIGUAS, -1.00, 1.41; V3 (Costos), 1.00, 2.00, AUTONOMAS, -0.50, 0.71. El gráfico tiene tres puntos. Paso 2: vuelve a haber cuatro variables, la cuarta sin nombre (se rotula V4) y con su fila y columna en blanco; 12 celdas editables; recuadro rojo con "Hay campos vacíos: complete todos los campos antes de calcular."; resultados "Complete o corrija los datos para ver el resultado." y sin gráfico. Los valores de las tres primeras variables no cambian. | ☐ Sí<br>☐ No |
+| CP-70 | Prueba AE.8 (orden de carga) | D-AE1 cargado (CP-63), sin marcas. | 1. Marque con el selector, uno por uno y en este orden (D-AE2): V4 con SÍ, V3 con SÍ, V2 con NO, V1 con SÍ.<br>2. Después de cada marca, anote el orden de la lista Validadas.<br>3. Al final observe la tabla de ranking y el recuadro ámbar. | Lista Validadas tras cada paso: con V4 SÍ, "V4 (Demanda)"; con V3 SÍ, "V3 (Costos)" y "V4 (Demanda)" (V3 va antes aunque se marcó después); con V2 NO, igual que antes; con V1 SÍ, "V1 (Clima)", "V3 (Costos)" y "V4 (Demanda)". Es el orden de carga: no es el orden en que se marcaron (V4, V3, V1), ni el de motricidad de mayor a menor (V1, V4, V3), ni el de dependencia de mayor a menor (V4, V3, V1, que además coincide con el orden de marcado). La tabla de ranking sigue en el orden V1, V2, V3, V4 y los selectores muestran SÍ, NO, SÍ y SÍ. Sigue visible el recuadro ámbar sobre el orden pendiente de confirmar. Ninguna de las dos vistas se reordena. | ☐ Sí<br>☐ No |
+| CP-71 | Prueba AE.8 (marca sin definir) | Marcas de CP-70 puestas. | 1. Cambie el selector de V3 a "—". | La lista Validadas queda con "V1 (Clima)" y "V4 (Demanda)". La fila V3 (Costos) de la tabla de ranking muestra "—" en el selector y conserva sus valores (1.00, 2.00, AUTONOMAS, -0.50, 0.71). | ☐ Sí<br>☐ No |
+| CP-72 | Prueba AE.9 (ninguna con SÍ) | D-AE1 cargado y marcas de CP-70 puestas. | 1. Cambie a NO los selectores de V1, V3 y V4 (V2 ya está en NO). | La hoja Validadas muestra "Ninguna variable marcada con SÍ.", sin recuadro rojo. La tabla de ranking, los cortes y el gráfico siguen igual que en CP-63, con los cuatro selectores en NO. El módulo no se bloquea. | ☐ Sí<br>☐ No |
+| CP-73 | Prueba AE.10 (recarga) | D-AE1 cargado, con las marcas V1 SÍ, V2 NO, V3 SÍ y V4 SÍ. | 1. Pulse F5.<br>2. Revise la sección, los campos, los selectores y el gráfico. | Después de F5 sigue abierta la sección AE, con el botón AE resaltado. Los nombres son Clima, Precio, Costos y Demanda, la matriz conserva los valores de D-AE1 y los selectores muestran SÍ, NO, SÍ y SÍ. Se ven los mismos resultados de CP-63 (cortes 4.00 y 4.00 y las cuatro filas) y el gráfico con cuatro puntos. La lista Validadas muestra "V1 (Clima)", "V3 (Costos)" y "V4 (Demanda)". | ☐ Sí<br>☐ No |
+| CP-74 | Escenario AE-3 (exportación) y estructura [VERIFICAR] | D-AE1 cargado, con las marcas V1 SÍ, V2 NO, V3 SÍ y V4 SÍ. AE activa. Un programa de hojas de cálculo (Excel, LibreOffice u otro). | 1. Pulse "Exportar a Excel".<br>2. Abra el archivo descargado con el programa de hojas de cálculo.<br>3. Revise las dos hojas.<br>4. En una celda libre escriba una fórmula que compruebe si es número, sobre algunas celdas de números (por ejemplo `=ESNUMERO(C2)` en la hoja Datos y `=ESNUMERO(B2)` en la hoja Resultados, en Excel en español; en inglés `=ISNUMBER(...)`). | Se descarga `Mtx-AE.xlsx` y se abre sin errores, sin recuadro rojo en la página. Tiene dos hojas, "Datos" y "Resultados". Datos (A1 a E5): fila 1 con Variable, Clima, Precio, Costos y Demanda; fila 2 Clima, vacío, 4, 0, 4; fila 3 Precio, 1, vacío, 2, 4; fila 4 Costos, 0, 1, vacío, 0; fila 5 Demanda, 0, 2, 0, vacío. Las celdas de la diagonal están vacías. Resultados (A1 a G8): fila 1 con Variable, Motricidad, Dependencia, Cuadrante, Proyección x, Proyección y y Marca; fila 2 Clima, 8, 1, INDEPENDIENTES, 3.5, 4.949747, SÍ; fila 3 Precio, 7, 7, AMBIGUAS, 0, 0, NO; fila 4 Costos, 1, 2, AUTONOMAS, -0.5, 0.707107, SÍ; fila 5 Demanda, 2, 8, DEPENDIENTES, -3, 4.242641, SÍ; fila 6 vacía; fila 7 Corte Y, 4; fila 8 Corte X, 4. Los valores de la matriz, la motricidad, la dependencia, las proyecciones y los cortes son celdas numéricas (la fórmula da VERDADERO); los nombres, el cuadrante y la marca son texto. La estructura es provisional y no se pudo comparar con la del Excel original [VERIFICAR]. | ☐ Sí<br>☐ No |
+| CP-75 | Historia 7 y módulo AE: Edge | Windows con Edge. Misma copia local de `index.html`. RD en Edge. | 1. Abra `index.html` con Edge.<br>2. Cargue D-AE1 (procedimiento CA).<br>3. Repita lo de CP-64 y CP-65 (puntos, cuadrantes, cortes, diagonal y líneas de proyección).<br>4. Repita lo de CP-67 (clic, escritura y Tab en la diagonal). | Se cumple lo esperado en CP-63, CP-64, CP-65 y CP-67: mismos resultados, el gráfico se ve igual que en Chrome (cuatro cuadrantes rotulados, cuatro puntos con sus rótulos, las dos líneas de corte, la diagonal y las líneas de proyección) y la diagonal no acepta foco ni escritura. Sin mensajes de error en la consola. Anote el navegador y la versión en el registro. | ☐ Sí<br>☐ No |
+| CP-76 | Historia 7 y módulo AE: Firefox | Windows con Firefox. Misma copia local de `index.html`. RD en Firefox. | 1. Abra `index.html` con Firefox.<br>2. Cargue D-AE1 (procedimiento CA).<br>3. Repita lo de CP-64 y CP-65.<br>4. Repita lo de CP-67. | Se cumple lo esperado en CP-63, CP-64, CP-65 y CP-67, igual que en CP-75. Anote el navegador y la versión en el registro. | ☐ Sí<br>☐ No |
+| CP-77 | Requisito de tamaño de Inception (hasta 200 variables) | RD. Chrome (u otro navegador ya probado). Equipo en condiciones normales. | 1. Pegue el script D-AE3 en la consola y pulse Enter. La consola escribe "Guardado: true" y la página se recarga.<br>2. Observe cuánto tarda en aparecer la sección AE con sus datos, y anote la experiencia.<br>3. Desplácese por la matriz y por la tabla de ranking.<br>4. Escriba un 0 y luego un 4 en una celda cualquiera y observe qué tan fluido responde el recálculo.<br>5. Pase el cursor sobre un par de puntos del gráfico.<br>6. En la consola escriba `document.querySelectorAll('#matriz-ae input.celda').length`, y después lo mismo con `#matriz-ae .resultados tbody tr` y con `#matriz-ae .grafico circle`.<br>7. Haga un RD. | Tras la recarga se abre la sección AE con 200 variables, sin recuadro rojo. Hay el texto "Corte de motricidad (eje Y): …" con dos valores (varían, porque las calificaciones son al azar), una tabla de ranking de 200 filas desde "V1 (Variable 1)" hasta "V200 (Variable 200)" en orden de carga, el recuadro ámbar sobre el orden, la hoja Validadas con "Ninguna variable marcada con SÍ." y un gráfico con 200 puntos y 200 líneas de proyección. Los tres comandos del paso 6 devuelven 39800 (200 por 199 celdas editables), 200 y 200; la matriz tiene además 200 celdas de diagonal atenuadas. No se fija un tiempo como criterio de aprobación, porque ese umbral nunca se acordó con el profesor. Se marca "Sí" si el módulo carga, calcula y dibuja sin errores ni bloqueos; anote en observaciones cuánto tardó cada paso y si la escritura se sintió lenta, para llevarlo al profesor. | ☐ Sí<br>☐ No |
+
+### 4. Resumen de cobertura
+
+| Bloque | Casos | Rango |
+|---|---|---|
+| A. Estado limpio, carga y resultados | 3 | CP-61 a CP-63 |
+| B. Gráfico de `dibujarAE` | 3 | CP-64 a CP-66 |
+| C. Diagonal, validación y variables | 3 | CP-67 a CP-69 |
+| D. Marcas, orden de ranking y hoja Validadas | 3 | CP-70 a CP-72 |
+| E. Recarga y exportación | 2 | CP-73 y CP-74 |
+| F. Edge y Firefox | 2 | CP-75 y CP-76 |
+| G. Matriz grande | 1 | CP-77 |
+| Total | 17 | CP-61 a CP-77 |
+
+Lo que Construction II dejó pendiente y dónde se cubre:
+
+| Pendiente de Construction II | Casos |
+|---|---|
+| Resultado visual real de `dibujarAE` | CP-64, CP-65, CP-66 |
+| Bloqueo de la diagonal en pantalla (prueba AE.5) | CP-62, CP-67 |
+| Orden de la tabla de ranking y de la hoja Validadas (pruebas AE.8 y AE.9) | CP-70, CP-71, CP-72 |
+| Rendimiento con una matriz grande | CP-77 |
+| Edge y Firefox | CP-75, CP-76 |
+| Exportación abierta en un programa de hojas de cálculo | CP-74 |
+
+Las pruebas AE.6, AE.7 y AE.10 de Elaboration I, que `tests/elaboration1.test.js` ya verifica sin pantalla, se cubren aquí en lo que tienen de visible: CP-68 y CP-61 a CP-62, y CP-73. No se escribió ningún caso para funcionalidad que no existe: no hay caso de criterio de orden del ranking distinto al orden de carga ni de otra estructura de exportación.
+
+### Observaciones y puntos nuevos marcados [VERIFICAR] en esta fase
+
+Observaciones al preparar el plan (no se cambió código):
+
+1. **La diagonal de igualdad no queda a 45° en pantalla.** La simulación midió que va de la esquina inferior izquierda a la superior derecha de un recuadro de 550 por 435 unidades, lo que da una inclinación de 38.34°, y que las líneas de proyección forman con ella un ángulo de unos 77° y no de 90° (se midieron desde la geometría del SVG). La causa es que el recuadro no es cuadrado: los dos ejes usan el mismo rango de valores, pero no la misma cantidad de píxeles por unidad. La Construction II de este módulo dice que la escala es "la misma en los dos ejes, para que la diagonal de igualdad quede a 45°", y eso no es exacto. Los valores no se ven afectados: V2, con motricidad igual a dependencia, está sobre la diagonal, y el extremo de cada línea de proyección toca la diagonal. Lo que cambia es la lectura visual de los ángulos. CP-65 describe lo que la aplicación hace hoy. [VERIFICAR] si el plano debe ser cuadrado, con la diagonal a 45° y las líneas de proyección perpendiculares a ella; si es así, hay que cambiar `dibujarAE` y corregir ese párrafo de la Construction II.
+2. El botón de la navegación y el título de la sección dicen "AE"; el nombre "Análisis Estructural" solo aparece como texto emergente del botón y en el párrafo de ayuda.
+3. El recuadro ámbar sobre el orden del ranking se ve siempre que hay resultado, no solo en un caso límite. Es deliberado: el orden de carga es provisional (punto 3 de Elaboration I de este módulo).
+4. El estado limpio de AE no tiene variables, así que la persona debe pulsar "+ Agregar variable" al menos dos veces antes de poder calificar nada.
+5. Con la matriz de 200 variables la aplicación recalcula y redibuja todo el módulo en cada tecla. En esta fase no se fija ningún tiempo como criterio de aprobación y no se midió desde el punto de vista de una persona.
+
+Puntos [VERIFICAR] nuevos:
+
+1. La inclinación de la diagonal y el ángulo de las líneas de proyección (observación 1).
+2. Criterio de rendimiento para la matriz grande: cuánto tiempo es aceptable al escribir y al recalcular con hasta 200 variables, y si el curso necesita llegar a ese tamaño. Sigue abierto el punto 2 de la Inception de este módulo.
+3. Quién ejecuta este plan, con qué frecuencia y cómo se registran los fallos: igual que el punto 5 de la Construction III del Módulo 1.
