@@ -677,12 +677,25 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
       <div class="resultados"></div>
       <div class="grafico"></div>
     </section>
+
+    <section id="matriz-ae" class="matriz" data-matriz="AE" hidden>
+      <h2>AE</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
   </main>
 
   <!-- Construction III: librería de generación de .xlsx embebida aquí, sin CDN [VERIFICAR] -->
 
   <script>
     'use strict';
+
+    // Auxiliar privada del Validador para AE (Construction II/III): aplica el mínimo de dos variables y excluye la diagonal del conteo de campos vacíos
+    function erroresAE(datos, errores) {
+      // Construction II/III
+    }
 
     const Validador = {
       validar(matriz, datos) {
@@ -720,6 +733,9 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
       },
       ubicarGE(ejes) {
         // Construction II/III (firma provisional, depende de la Historia 6)
+      },
+      calcularAE(variables, matriz) {
+        // Construction II/III
       }
     };
 
@@ -735,6 +751,9 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
       },
       dibujarGE(resultado) {
         // Construction II/III (firma provisional, depende de la Historia 6)
+      },
+      dibujarAE(resultado) {
+        // Construction II/III
       }
     };
 
@@ -743,7 +762,7 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
         // Construction II/III
       },
       cargar() {
-        // Construction II/III
+        // Construction II/III (si el estado guardado no trae datos.AE, devolver AE vacío; sin cambio de versión del formato)
       },
       limpiar() {
         // Construction II/III
@@ -755,6 +774,16 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
         // Construction III
       }
     };
+
+    // Auxiliares privadas de la Vista para AE (Construction II/III). formularioAE dibuja la matriz NxN (celda con data-campo "matriz.i.j",
+    // diagonal bloqueada); resultadosAE construye la tabla de ranking y la lista de solo lectura de la hoja Validadas
+    function formularioAE(datos) {
+      // Construction II/III
+    }
+
+    function resultadosAE(resultado) {
+      // Construction II/III
+    }
 
     // La Vista es el único orquestador: llama a los otros cinco objetos.
     const Vista = {
@@ -1738,3 +1767,73 @@ Los escenarios AE-3 y AE-4 no tienen diagrama propio: siguen la misma secuencia 
 4. Estado guardado: cómo se acomodan variables, matriz y marcas, y si el formato guardado cambia de versión. Se decide en Construction I, junto con la sincronización de la frase de las siete siglas.
 5. Los puntos abiertos de recuperación de sesión del Módulo 1 (mensajes de error de una matriz incompleta y aviso al descartar un estado corrupto) aplican también a este módulo.
 6. Siguen abiertos los puntos de Elaboration I de este módulo: el orden provisional del ranking, las calificaciones con decimales y la redacción de mensajes.
+
+## Construction I — Módulo 2: Análisis Estructural
+
+Objetivo de la fase: resolver las tres preguntas que Elaboration II del Módulo 1 y de este módulo dejaron abiertas para Construction I, y dejar el esqueleto del proyecto extendido con los stubs de Análisis Estructural, sin comportamiento real. Los cuerpos de los métodos están vacíos o llevan un comentario de marcador de posición. Ninguna lógica de cálculo, validación, graficado ni renderizado se implementa en esta fase, y esta fase no toca `index.html` ni `tests/`: el esqueleto sigue viviendo dentro de este documento.
+
+### 1. Decisiones de arquitectura
+
+El stack no cambia: archivo único `index.html`, HTML, CSS y JavaScript sin framework ni backend, SVG para los gráficos, SheetJS embebido y localStorage. Se aplica tal cual a este módulo.
+
+Las tres preguntas abiertas se resuelven con decisiones del juez:
+
+| Pregunta abierta en Elaboration II | Decisión |
+|---|---|
+| ¿La hoja Validadas necesita su propia función de renderizado en la Vista? | No. Ningún método público nuevo en la Vista. `renderResultados('AE', resultado)` cubre también la hoja Validadas, con una auxiliar privada, `resultadosAE`, que construye tanto la tabla de ranking como la lista filtrada de solo lectura. |
+| ¿El Validador necesita un método nuevo para esta matriz? | No. Ningún método público nuevo. `validar('AE', datos)` reutiliza `validarCamposVacios` y `validarRango` sobre las celdas fuera de la diagonal, con una auxiliar privada, `erroresAE`, equivalente a `erroresBCG` para este módulo. `erroresAE` aplica el mínimo de dos variables y excluye la diagonal del conteo de campos vacíos. |
+| ¿Cómo se acomodan los datos del módulo en el estado guardado, y cambia la versión del formato? | Es una clave nueva, `datos.AE`, junto a `BCG`, `EFI` y las demás. No cambia la versión del formato guardado. `Persistencia.cargar()` debe devolver `AE` vacío si un estado guardado anterior no la tiene. Su forma está justo debajo. |
+
+Forma de `estado.datos.AE`:
+
+```text
+{
+  variables: [nombre1, nombre2, ...],
+  matriz:    [[null, v12, v13, ...], [v21, null, v23, ...], ...],
+  marcas:    [marca1, marca2, ...]
+}
+```
+
+- `matriz[i][j]` es cuánto influye la variable i sobre la variable j. La diagonal es `null`, no 0: el 0 significa "no influye" y es una calificación hecha, mientras que `null` significa "no aplica".
+- `marcas[i]` es `"SI"`, `"NO"` o `null` si no se marcó.
+- Ejemplo con los datos de las pruebas AE.1 y AE.8:
+
+```text
+{
+  variables: ["V1", "V2", "V3", "V4"],
+  matriz: [[null, 4, 0, 4],
+           [1, null, 2, 4],
+           [0, 1, null, 0],
+           [0, 2, 0, null]],
+  marcas: ["SI", "NO", "NO", "SI"]
+}
+```
+
+Reglas que acompañan a esa forma:
+
+- **Campos del formulario.** Cada celda de la matriz usa el mismo patrón `data-campo` que las demás matrices, con una ruta como `matriz.0.1` (fila 0, columna 1). Las celdas de la diagonal no llevan campo editable, lo que cumple la prueba AE.5.
+- **Agregar y quitar variables.** Quitar una variable sigue la regla ya establecida para BCG y las demás matrices: "− borra siempre el último". Se elimina la última variable, su fila y su columna de la matriz y su marca, nunca una del medio, lo que simplifica el ajuste de la matriz. Agregar una variable suma una fila y una columna al final, con la diagonal en `null`, y una marca `null`.
+- **Estado guardado anterior.** Un estado guardado sin `datos.AE` no se descarta: se completa con `AE` vacío, de modo que los datos de las otras matrices sobreviven a la actualización. Además, `"AE"` pasa a ser un valor válido de matriz activa.
+
+### 2. Esqueleto del proyecto
+
+No hay un bloque de código nuevo. Se extendió el esqueleto de la Construction I del Módulo 1 (arriba, en este documento) agregando solo estos stubs, en el lugar de cada componente que corresponde y con la convención de nombres ya usada (`calcularBCG`, `erroresBCG`, `formularioBCG`, `resultadosBCG`). Cada cuerpo queda vacío con un marcador de posición.
+
+| Dónde en el esqueleto | Stub nuevo | Tipo |
+|---|---|---|
+| `<main>`, después de la sección GE | `<section id="matriz-ae" class="matriz" data-matriz="AE" hidden>` con los cuatro contenedores `formulario`, `errores`, `resultados` y `grafico` | Contenedor HTML |
+| Antes de `Validador` | `erroresAE(datos, errores)` | Auxiliar privada |
+| `MotorCalculo` | `calcularAE(variables, matriz)` | Método público, ya definido en Elaboration II |
+| `MotorGraficos` | `dibujarAE(resultado)` | Método público, ya definido en Elaboration II |
+| `Persistencia.cargar` | Solo un comentario: devolver `AE` vacío si el estado guardado no lo trae | Comentario |
+| Antes de `Vista` | `formularioAE(datos)` y `resultadosAE(resultado)` | Auxiliares privadas |
+
+Lo que no cambia en el esqueleto: los seis objetos y sus firmas públicas, salvo las dos firmas nuevas de arriba. `Vista`, `Validador`, `Persistencia` y `Exportador` no suman ningún método público. Las auxiliares privadas son funciones sueltas del script, igual que `erroresBCG` y `formularioBCG`: no son métodos de los objetos y no modifican sus firmas.
+
+Con estas extensiones, dos frases de "Correspondencia con Elaboration II" en la Construction I del Módulo 1 describen el esqueleto de ese módulo y ya no son literales: "El script no agrega métodos ni componentes nuevos" y "No hay métodos auxiliares". No se editan, porque lo que dicen era cierto para el Módulo 1.
+
+### Puntos nuevos marcados [VERIFICAR] en esta fase
+
+1. Celda fuera de la diagonal sin calificar: la decisión del juez fija `null` para la diagonal pero no para una celda por calificar. Se asume la convención de las demás matrices (texto vacío), de modo que la diagonal se distingue por su posición y no por su valor.
+2. Cantidad de variables en un estado limpio: cuántas variables, con qué nombres y con cuántas marcas empieza el módulo. Las demás matrices arrancan con dos filas, y la prueba AE.7 admite una sola variable.
+3. Rutas `data-campo` de los nombres de variable y de las marcas: se asume `variables.0` y `marcas.0` por analogía con `matriz.0.1`. La decisión del juez fija solo la de la matriz.
