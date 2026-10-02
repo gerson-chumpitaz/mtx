@@ -2054,3 +2054,71 @@ Puntos [VERIFICAR] nuevos:
 
 1. Criterio de rendimiento para la matriz grande: cuánto tiempo es aceptable al escribir y al recalcular con hasta 200 variables, y si el curso necesita llegar a ese tamaño. Sigue abierto el punto 2 de la Inception de este módulo.
 2. Quién ejecuta este plan, con qué frecuencia y cómo se registran los fallos: igual que el punto 5 de la Construction III del Módulo 1.
+
+## Transition — Módulo 2: Análisis Estructural
+
+Objetivo de la fase: publicar Análisis Estructural, verificarlo en su dirección real, y cerrar el ciclo VUP de este módulo. El resumen del código y la lista consolidada de [VERIFICAR] para el profesor no se repiten aquí: se actualizaron dentro del "## Transition" del Módulo 1, partes 3 y 4, porque describen el archivo completo. Esta fase no cambió `index.html` ni `tests/`, y no resolvió ningún punto [VERIFICAR]: solo publica y enumera.
+
+### 1. Configuración de despliegue
+
+No hay nada nuevo que configurar. El sitio de GitHub Pages ya existe (ver la parte 1 del Transition del Módulo 1: URL https://gerson-chumpitaz.github.io/mtx/, rama `master`, carpeta raíz, publicación por rama, HTTPS forzado) y se vuelve a publicar solo con cada `git push` a `master`.
+
+Lo que se hizo en este módulo:
+
+1. Se subieron los commits del módulo a `master`. El último push fue `36d5e83..f3e4464`; `f3e4464` es el último commit que modificó `index.html`.
+2. Se esperó la publicación consultando cada 15 segundos, con el mismo método del Módulo 1, hasta que el estado pasó de `building` a `built` (algo menos de un minuto):
+
+```bash
+gh api repos/gerson-chumpitaz/mtx/pages/builds/latest
+```
+
+   La respuesta final trajo `status` = `built` y `commit` = `f3e4464`.
+3. Se comprobó que el archivo servido es idéntico al del repositorio: el SHA-256 de la URL y el de `index.html` es `f648e0736d7f92c7f355cca3af0ae8dec369935ad7690bfdab0d439d390b5d06` (1 039 759 bytes). `VUP.md` también queda servido en la misma dirección, como ya advertía el Módulo 1.
+
+Los commits de esta fase solo cambian `VUP.md`: al subirlos Pages vuelve a publicar, con el mismo `index.html`.
+
+### 2. Resultado de la verificación en la URL real
+
+Se abrió https://gerson-chumpitaz.github.io/mtx/ en el navegador integrado de la aplicación (Chromium), se partió de un estado limpio (`localStorage.removeItem('mtx.estado')`) y se recorrió AE con los datos de la prueba AE.1, con eventos del DOM. No se repitió la verificación de las otras siete matrices: sigue siendo válida la del Módulo 1.
+
+| Comprobación | Resultado |
+|---|---|
+| La página carga | Sí: HTTP 200 y contenido idéntico a `index.html` del commit (ver arriba). |
+| Navegación | Ocho botones (BCG, EFI, EFE, MPC, PEYEA, MIE, GE y AE). Al abrir está resaltado BCG. |
+| Estado limpio de AE | Sin variables, con el texto "Todavía no hay variables. Agregue al menos dos." y "− Quitar la última variable" deshabilitado. |
+| Carga de AE.1 | Cuatro variables (Clima, Precio, Costos y Demanda): 12 celdas editables y 4 celdas de diagonal sin campo. Sin recuadro de errores. |
+| Resultados de AE.1 | "Corte de motricidad (eje Y): 4.00. Corte de dependencia (eje X): 4.00." Filas: V1 (Clima), 8.00, 1.00, INDEPENDIENTES, 3.50, 4.95; V2 (Precio), 7.00, 7.00, AMBIGUAS, 0.00, 0.00; V3 (Costos), 1.00, 2.00, AUTONOMAS, -0.50, 0.71; V4 (Demanda), 2.00, 8.00, DEPENDIENTES, -3.00, 4.24. Coinciden con la prueba AE.1 y con CP-63. |
+| Gráfico | Cuatro puntos con los rótulos V1 a V4 y los rótulos de cuadrante INDEPENDIENTES, AMBIGUAS, AUTONOMAS y DEPENDIENTES; dos líneas de corte; los textos emergentes traen el nombre completo (por ejemplo "Clima: INDEPENDIENTES, motricidad 8, dependencia 1"). |
+| Geometría corregida | El área de trazado mide 435 por 435 (`viewBox` de 525 por 520). La diagonal de igualdad mide 45° y las líneas de proyección de V1, V3 y V4 le quedan a 90°, con el extremo sobre la diagonal; V2, con motricidad igual a dependencia, tiene línea de longitud cero. Se midió desde la geometría del SVG, igual que en la corrección. |
+| Diagonal bloqueada | Las celdas de la diagonal no tienen campo; un clic y una tecla sobre una de ellas no cambian el estado guardado. |
+| Marcas y hoja Validadas | Con V4 SÍ, V3 SÍ, V2 NO y V1 SÍ (en ese orden), la hoja Validadas lista "V1 (Clima)", "V3 (Costos)" y "V4 (Demanda)": orden de carga. Se ve el recuadro ámbar sobre el orden pendiente. Con ninguna marcada dice "Ninguna variable marcada con SÍ." |
+| Exportación | Se generó `Mtx-AE.xlsx` con las hojas "Datos" y "Resultados" y los mismos valores de CP-74 (cortes 4 y 4, proyección y 4.949747 para V1). Se comprobó leyendo el libro de SheetJS antes de que el navegador lo descargara, no abriéndolo en Excel. |
+| Persistencia | Tras recargar la URL siguen la sección AE abierta, los nombres, la matriz, los selectores (SÍ, NO, SÍ y SÍ), los mismos resultados, el gráfico con cuatro puntos y la lista Validadas con V1, V3 y V4. |
+| Errores de consola | Ninguno, ni en el recorrido ni tras recargar. |
+| Solicitudes de red | Solo la del propio documento (`GET https://gerson-chumpitaz.github.io/mtx/`, HTTP 200, una por carga). Ningún recurso externo ni CDN. |
+
+Al terminar se borró `mtx.estado` del origen para dejarlo limpio. Qué no se verificó: la URL solo se probó en el navegador integrado (no en Chrome, Edge ni Firefox por separado ni en un teléfono); los datos se escribieron con eventos simulados y no con el teclado; la exportación se validó leyendo el libro generado, no abriéndolo en un programa de hojas de cálculo (no se descargó ningún archivo); no se probó la matriz de 200 variables en la URL pública; y el plan de pruebas manual de este módulo (CP-61 a CP-77) no se ha ejecutado con una persona.
+
+### 3. Reflexión
+
+Preguntas de VUP para responder a mano. No las respondió la IA.
+
+**1. ¿Qué fue lo más importante de la especificación?**
+
+Respuesta:
+
+**2. ¿Qué harías distinto?**
+
+Respuesta:
+
+**3. ¿Qué te sorprendió de cómo la IA implementó los requisitos?**
+
+Respuesta:
+
+**4. ¿Cómo ayudó tener un plan de pruebas claro?**
+
+Respuesta:
+
+**5. ¿Qué agregarías si siguieras desarrollando el proyecto?**
+
+Respuesta:
