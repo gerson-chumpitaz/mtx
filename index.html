@@ -458,6 +458,27 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       }
     }
 
+    function calificacionRadarValida(valor) {
+      return Validador.validarRango(valor, 0, 5) && Number.isInteger(aNumero(valor));
+    }
+
+    // RADAR: revisa solo el rango (enteros de 0 a 5, con validarRango) de las calificaciones que tengan valor. Una calificación sin
+    // valor nunca es un error: ausencia no es invalidez. Empuja a "errores" un mensaje por característica fuera de rango (con el nombre de
+    // su componente y su posición dentro de él) y devuelve los índices planos (0 a 55) de esas características.
+    // [VERIFICAR] Elaboration I del Módulo 3, punto 3: si una calificación con decimales (por ejemplo 2.5) se rechaza. Aquí sí, como en AE.
+    function erroresRadar(datos, errores) {
+      const calificaciones = Array.isArray(datos.calificaciones) ? datos.calificaciones : [];
+      const indicesInvalidos = [];
+      ESTRUCTURA_RADAR.forEach((componente) => {
+        for (let i = componente.desde; i <= componente.hasta; i++) {
+          if (esVacio(calificaciones[i]) || calificacionRadarValida(calificaciones[i])) continue;
+          indicesInvalidos.push(i);
+          errores.push(componente.nombre + ', característica ' + (i - componente.desde + 1) + ': debe ser un número entero entre 0 y 5.');
+        }
+      });
+      return indicesInvalidos;
+    }
+
     const Validador = {
       validar(matriz, datos) {
         if (!MATRICES.includes(matriz)) {
@@ -471,19 +492,26 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         }
         const errores = [];
         // En AE se revisan solo las celdas fuera de la diagonal: la diagonal es null por diseño y las marcas pueden ser null.
-        if (!Validador.validarCamposVacios(matriz === 'AE' ? celdasFueraDeDiagonalAE(datos) : datos)) {
+        // En RADAR no se revisan los campos vacíos: una característica sin calificar es un estado normal de trabajo en progreso
+        // (el componente queda "incompleto" o "vacío"), nunca un error.
+        if (matriz !== 'RADAR' && !Validador.validarCamposVacios(matriz === 'AE' ? celdasFueraDeDiagonalAE(datos) : datos)) {
           errores.push('Hay campos vacíos: complete todos los campos antes de calcular.');
         }
+        let indicesInvalidos;
         switch (matriz) {
           case 'BCG': erroresBCG(datos, errores); break;
           case 'AE': erroresAE(datos, errores); break;
+          case 'RADAR': indicesInvalidos = erroresRadar(datos, errores); break;
           case 'EFI':
           case 'EFE': erroresPonderados(datos, errores); break;
           case 'MPC': erroresMPC(datos, errores); break;
           case 'PEYEA': erroresPEYEA(datos, errores); break;
           case 'MIE': erroresMIE(datos, errores); break;
         }
-        return { valido: errores.length === 0, errores };
+        const validacion = { valido: errores.length === 0, errores };
+        // Solo RADAR necesita saber qué características fallaron: calcularRadar marca "inválido" a su componente y calcula los demás.
+        if (matriz === 'RADAR') validacion.indicesInvalidos = indicesInvalidos;
+        return validacion;
       },
       // true si los pesos son números entre 0 y 1 y suman 1 dentro de la tolerancia (prueba 2.4 de Elaboration I).
       validarPesos(factores) {
@@ -721,6 +749,28 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
             };
           })
         };
+      },
+
+      // calificaciones: las 56 calificaciones planas (texto, número o null). "errores" contiene ÍNDICES planos (0 a 55) de las
+      // características fuera de rango (lo que devuelve erroresRadar), no mensajes. Devuelve un arreglo de 14 posiciones en el orden de
+      // ESTRUCTURA_RADAR (las puntas 1 a 14), cada una { estado, puntaje }. Cada componente se evalúa de forma independiente:
+      //   "inválido":   alguna de sus características está en "errores"; puntaje null.
+      //   "vacío":      ninguna característica tiene valor; puntaje null.
+      //   "incompleto": algunas sí y otras no; puntaje null (no es un error).
+      //   "completo":   todas tienen valor; puntaje = promedio sin redondear de sus propias calificaciones.
+      calcularRadar(calificaciones, errores) {
+        const invalidos = Array.isArray(errores) ? errores : [];
+        return ESTRUCTURA_RADAR.map((componente) => {
+          const valores = [];
+          for (let i = componente.desde; i <= componente.hasta; i++) {
+            if (invalidos.includes(i)) return { estado: 'inválido', puntaje: null };
+            valores.push(calificaciones[i]);
+          }
+          const calificadas = valores.filter((v) => !esVacio(v));
+          if (calificadas.length === 0) return { estado: 'vacío', puntaje: null };
+          if (calificadas.length < valores.length) return { estado: 'incompleto', puntaje: null };
+          return { estado: 'completo', puntaje: calificadas.reduce((suma, v) => suma + aNumero(v), 0) / calificadas.length };
+        });
       }
     };
 
@@ -1455,6 +1505,19 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       ];
     }
 
+    // RADAR: una fila por componente (14), en el orden de las puntas. El puntaje solo existe en los componentes completos; el redondeo a
+    // dos decimales es solo de presentación.
+    function resultadosRadar(r) {
+      const etiquetaEstado = (estadoComponente) => estadoComponente.charAt(0).toUpperCase() + estadoComponente.slice(1);
+      const filas = r.map((c, k) => [
+        ESTRUCTURA_RADAR[k].etapa, ESTRUCTURA_RADAR[k].nombre, etiquetaEstado(c.estado), c.estado === 'completo' ? dosDecimales(c.puntaje) : ''
+      ]);
+      return [
+        tabla(['Etapa', 'Componente', 'Estado', 'Puntaje'], filas),
+        el('p', { clase: 'pista', texto: 'Un componente se calcula y se grafica cuando todas sus características están calificadas. Los que están incompletos o vacíos todavía no muestran su punto. Recuerde que la escala está invertida: un puntaje cercano a 0 es lo ideal y uno cercano a 5 señala un problema.' })
+      ];
+    }
+
     function seccionDe(matriz) {
       return document.getElementById('matriz-' + matriz.toLowerCase());
     }
@@ -1484,6 +1547,11 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     // sin calificaciones la matriz está "vacía" (con una sola variable no hay celdas que calificar).
     function hayCalificacionesAE(datos) {
       return celdasFueraDeDiagonalAE(datos).some((valor) => !esVacio(valor));
+    }
+
+    // RADAR: true si el estudiante ya calificó alguna de las 56 características. Sin ninguna el módulo está "vacío".
+    function hayCalificacionesRadar(datos) {
+      return Array.isArray(datos.calificaciones) && datos.calificaciones.some((valor) => !esVacio(valor));
     }
 
     // Deriva los totales de EFI y EFE que usa la MIE (escenario 2 de Elaboration II).
@@ -1517,10 +1585,16 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       } else {
         datos = estado.datos[matriz];
         // [VERIFICAR] Elaboration II, punto 6: una matriz sin ningún dato no muestra errores hasta que el usuario escribe.
-        if (!(matriz === 'AE' ? hayCalificacionesAE(datos) : hayDatosIngresados(datos))) return { estado: 'vacia', errores: [] };
+        let hayDatos;
+        if (matriz === 'AE') hayDatos = hayCalificacionesAE(datos);
+        else if (matriz === 'RADAR') hayDatos = hayCalificacionesRadar(datos);
+        else hayDatos = hayDatosIngresados(datos);
+        if (!hayDatos) return { estado: 'vacia', errores: [] };
       }
       const validacion = Validador.validar(matriz, datos);
-      if (!validacion.valido) return { estado: 'invalida', errores: validacion.errores, datos };
+      // En RADAR la validez es por componente, no del módulo: un componente inválido no corta el flujo (los otros se calculan y se
+      // grafican) y sus errores se devuelven junto con el resultado. Por eso nunca es "invalida".
+      if (matriz !== 'RADAR' && !validacion.valido) return { estado: 'invalida', errores: validacion.errores, datos };
       let resultado;
       switch (matriz) {
         case 'BCG': resultado = MotorCalculo.calcularBCG(datos.divisiones); resultado.tamanoPor = datos.tamanoPor; break;
@@ -1533,8 +1607,10 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           // Las marcas viajan con cada variable para que el resultado las traiga en el mismo orden de carga.
           resultado = MotorCalculo.calcularAE(datos.variables.map((nombre, i) => ({ nombre, marca: datos.marcas[i] })), datos.matriz);
           break;
+        case 'RADAR': resultado = MotorCalculo.calcularRadar(datos.calificaciones, validacion.indicesInvalidos); break;
       }
-      return { estado: 'ok', errores: [], datos, resultado };
+      // En las otras ocho matrices "validacion.errores" es [] en este punto; en RADAR trae el error de cada componente inválido.
+      return { estado: 'ok', errores: validacion.errores, datos, resultado };
     }
 
     function actualizarMatriz(matriz) {
@@ -1542,7 +1618,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       try {
         const evaluacion = evaluarMatriz(matriz);
         if (evaluacion.estado === 'ok') {
-          Vista.mostrarErrores([]);
+          Vista.mostrarErrores(evaluacion.errores);
           Vista.renderResultados(matriz, evaluacion.resultado);
           if (matriz === 'BCG') MotorGraficos.dibujarBCG(evaluacion.resultado);
           else if (matriz === 'PEYEA') MotorGraficos.dibujarPEYEA(evaluacion.resultado);
@@ -1614,7 +1690,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           Vista.mostrarErrores(evaluacion.estado === 'vacia' ? ['Complete los datos antes de exportar.'] : evaluacion.errores);
           return;
         }
-        Vista.mostrarErrores([]);
+        Vista.mostrarErrores(evaluacion.errores);
         Exportador.exportarXLSX(matriz, evaluacion.datos, evaluacion.resultado);
       } catch (error) {
         Vista.mostrarErrores(['No se pudo exportar el archivo: ' + error.message]);
@@ -1664,6 +1740,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           case 'PEYEA': nodos = resultadosPEYEA(resultado); break;
           case 'MIE': nodos = resultadosMIE(resultado); break;
           case 'AE': nodos = resultadosAE(resultado); break;
+          case 'RADAR': nodos = resultadosRadar(resultado); break;
         }
         contenedor.replaceChildren(...nodos.filter((n) => n !== null));
       },
