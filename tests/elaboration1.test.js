@@ -811,8 +811,9 @@ prueba('X.7', 'Exportador RADAR: hojas "Datos" (56 filas) y "Resultados" (14 fil
   let capturado = null;
   contexto.XLSX.writeFile = (libro, nombre) => { capturado = { libro, nombre }; };
   const appConXLSX = cargarApp({ XLSX: contexto.XLSX });
-  // Movilización 1 inválido (un 6), Movilización 2 incompleto, Traducción 1 y Gestión 3 completos, el resto vacío.
-  const datos = datosRadar({ 'Movilización 1': [0, 1, 2, 6], 'Movilización 2': [1, 3], 'Traducción 1': [0, 0, 5, 5, 5], 'Gestión 3': [5, 5, 5, 5] });
+  // Movilización 1 inválido (un 6), Movilización 2 incompleto, Traducción 1 y Gestión 3 completos, Traducción 2 inválido (un 2.5), Motivación 1
+  // inválido (el texto abc) y el resto vacío.
+  const datos = datosRadar({ 'Movilización 1': [0, 1, 2, 6], 'Movilización 2': [1, 3], 'Traducción 1': [0, 0, 5, 5, 5], 'Traducción 2': [2.5, 1, 1, 1], 'Motivación 1': [null, 'abc'], 'Gestión 3': [5, 5, 5, 5] });
   const e = evaluarRadar(datos);
   igual(e.estado, 'ok', 'la exportación no se bloquea por componentes incompletos o inválidos');
   igual(appConXLSX.Exportador.exportarXLSX('RADAR', e.datos, e.resultado), 'Mtx-RADAR.xlsx', 'nombre del archivo');
@@ -824,6 +825,13 @@ prueba('X.7', 'Exportador RADAR: hojas "Datos" (56 filas) y "Resultados" (14 fil
   igual(hojaDatos.length, 57, 'filas de Datos (encabezado + 56 características)');
   igual(hojaDatos[1], ['Movilización', 'Movilización 1', 'Característica 1', 'La Estrategia está definida y formalizada por escrito', 0], 'primera fila de Datos');
   igual(hojaDatos[4][4], 6, 'el valor fuera de rango se exporta tal cual');
+  const hojaD = capturado.libro.Sheets.Datos;
+  igual([hojaD.E5.t, hojaD.E5.v], ['n', 6], 'el 6 es una celda numérica');
+  igual([hojaD.E19.t, hojaD.E19.v], ['n', 2.5], 'el 2.5 es una celda numérica y se exporta tal cual');
+  igual([hojaD.E35.t, hojaD.E35.v], ['s', 'abc'], 'el texto abc se exporta como texto, no como celda de error');
+  igual(hojaDatos[34][4], 'abc', 'el texto abc se lee de vuelta como abc');
+  const tiposDeCelda = (hoja) => Object.keys(hoja).filter((k) => k[0] !== '!').map((k) => hoja[k].t);
+  esperar(![...tiposDeCelda(capturado.libro.Sheets.Datos), ...tiposDeCelda(capturado.libro.Sheets.Resultados)].includes('e'), 'ninguna celda de ninguna hoja debía ser de tipo error');
   igual(hojaDatos[7][4], undefined, 'una característica sin calificar queda vacía');
   igual(hojaDatos[7][3], 'El lider ha configurado un equipo de proyecto compacto y equilibrado para el paso a Gestión estratégica', 'la afirmación se exporta aunque no esté calificada (tercera de Movilización 2)');
   igual(hojaDatos[56], ['Gestión', 'Gestión 3', 'Característica 4', 'La empresa tiene una reunión anual de redefinición del la Estrategia', 5], 'última fila de Datos');
