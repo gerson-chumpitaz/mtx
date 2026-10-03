@@ -794,20 +794,21 @@ prueba('X.7', 'Exportador RADAR: hojas "Datos" (56 filas) y "Resultados" (14 fil
   igual(capturado.libro.SheetNames, ['Datos', 'Resultados'], 'hojas');
   const hojaDatos = contexto.XLSX.utils.sheet_to_json(capturado.libro.Sheets.Datos, { header: 1 });
   const hojaResultados = contexto.XLSX.utils.sheet_to_json(capturado.libro.Sheets.Resultados, { header: 1 });
-  igual(hojaDatos[0], ['Etapa', 'Componente', 'Característica', 'Calificación'], 'encabezado de Datos');
+  igual(hojaDatos[0], ['Etapa', 'Componente', 'Característica', 'Afirmación', 'Calificación'], 'encabezado de Datos');
   igual(hojaDatos.length, 57, 'filas de Datos (encabezado + 56 características)');
-  igual(hojaDatos[1], ['Movilización', 'Movilización 1', 'Característica 1', 0], 'primera fila de Datos');
-  igual(hojaDatos[4][3], 6, 'el valor fuera de rango se exporta tal cual');
-  igual(hojaDatos[7][3], undefined, 'una característica sin calificar queda vacía');
-  igual(hojaDatos[56], ['Gestión', 'Gestión 3', 'Característica 4', 5], 'última fila de Datos');
-  igual(hojaResultados[0], ['Etapa', 'Componente', 'Estado', 'Puntaje'], 'encabezado de Resultados');
+  igual(hojaDatos[1], ['Movilización', 'Movilización 1', 'Característica 1', 'La Estrategia está definida y formalizada por escrito', 0], 'primera fila de Datos');
+  igual(hojaDatos[4][4], 6, 'el valor fuera de rango se exporta tal cual');
+  igual(hojaDatos[7][4], undefined, 'una característica sin calificar queda vacía');
+  igual(hojaDatos[7][3], 'El lider ha configurado un equipo de proyecto compacto y equilibrado para el paso a Gestión estratégica', 'la afirmación se exporta aunque no esté calificada (tercera de Movilización 2)');
+  igual(hojaDatos[56], ['Gestión', 'Gestión 3', 'Característica 4', 'La empresa tiene una reunión anual de redefinición del la Estrategia', 5], 'última fila de Datos');
+  igual(hojaResultados[0], ['Etapa', 'Componente', 'Título del componente', 'Estado', 'Puntaje'], 'encabezado de Resultados');
   igual(hojaResultados.length, 15, 'filas de Resultados (encabezado + 14 componentes)');
-  igual(hojaResultados[1].slice(0, 3), ['Movilización', 'Movilización 1', 'Inválido'], 'Movilización 1 inválido');
-  igual(hojaResultados[2].slice(0, 3), ['Movilización', 'Movilización 2', 'Incompleto'], 'Movilización 2 incompleto');
-  igual(hojaResultados[3].slice(0, 3), ['Movilización', 'Movilización 3', 'Vacío'], 'Movilización 3 vacío');
-  igual(hojaResultados[4], ['Traducción', 'Traducción 1', 'Completo', 3], 'Traducción 1 completo con su puntaje');
-  igual(hojaResultados[14], ['Gestión', 'Gestión 3', 'Completo', 5], 'Gestión 3 completo con su puntaje');
-  igual(hojaResultados.slice(1).map((f) => f[3]).filter((p) => p !== undefined).length, 2, 'solo los componentes completos traen puntaje');
+  igual(hojaResultados[1], ['Movilización', 'Movilización 1', 'LA VISION, MISION Y ESTRATEGIA ESTÁN CLARAMENTE DEFINIDAS', 'Inválido'], 'Movilización 1 inválido, con su título');
+  igual([hojaResultados[2][1], hojaResultados[2][3]], ['Movilización 2', 'Incompleto'], 'Movilización 2 incompleto');
+  igual([hojaResultados[3][1], hojaResultados[3][3]], ['Movilización 3', 'Vacío'], 'Movilización 3 vacío');
+  igual(hojaResultados[4], ['Traducción', 'Traducción 1', 'LA ESTRATEGIA ESTA EXPLICITADA A TRAVES DE UN MAPA ESTRATEGICO COMO PARTE DEL PROCESO DE PLANEAMIENTO: LOS OBJETIVOS ESTRATÉGICOS', 'Completo', 3], 'Traducción 1 completo con su título y su puntaje');
+  igual(hojaResultados[14], ['Gestión', 'Gestión 3', 'LA EMPRESA REALIZA UN SEGUIMIENTO SISTEMÁTICO DE LA GESTION ESTRATÉGICA', 'Completo', 5], 'Gestión 3 completo con su título y su puntaje');
+  igual(hojaResultados.slice(1).map((f) => f[4]).filter((p) => p !== undefined).length, 2, 'solo los componentes completos traen puntaje');
 });
 
 // Persistencia con un localStorage simulado.
