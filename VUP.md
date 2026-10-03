@@ -2728,7 +2728,7 @@ Objetivo de la fase: implementar en `index.html` la lógica y las pantallas de R
 | Flujo genérico (decisión C) | `evaluarMatriz`, `actualizarMatriz` y `exportarActiva` ajustados para que un componente incompleto o inválido no bloquee el módulo. Ver el punto 2. |
 | Persistencia | `estadoVacio` trae `RADAR` con 56 `null`. `cargar()` completa `datos.RADAR` con 56 `null` si un estado guardado anterior no lo trae o lo trae dañado, y conserva los demás datos. Sin cambio de versión del formato. |
 | Exportador | Rama `"RADAR"` con las hojas "Datos" (con el texto de cada afirmación) y "Resultados" (con el título de cada componente). Ver el punto 3. |
-| Pruebas | `tests/elaboration1.test.js`: pruebas RE.1 a RE.11, más la comprobación X.7 del Exportador de RADAR. |
+| Pruebas | `tests/elaboration1.test.js`: pruebas RE.1 a RE.12, más la comprobación X.7 del Exportador de RADAR. RE.12 comprueba el marcado de la disposición en dos columnas (punto 7). |
 
 ### 2. Forma final de `ResultadoRadar` y ajuste del flujo genérico
 
@@ -2769,7 +2769,7 @@ La exportación no se bloquea por componentes incompletos, vacíos o inválidos:
 
 ### 5. Verificación
 
-Comando: `node tests/elaboration1.test.js`. Resultado de la última corrida: 44 de 44 comprobaciones correctas (las 32 anteriores, que incluyen la X.1 contra el diagrama de clases con `calcularRadar` y `dibujarRadar`, más RE.1 a RE.11 y X.7). La ronda correctiva del texto del profesor no agregó comprobaciones: agregó aserciones dentro de RE.7 (14 títulos, 56 afirmaciones, `afirmaciones.length` igual a `caracteristicas` en los 14 componentes y el texto exacto de la primera afirmación de Movilización 1, la quinta de Traducción 1, la primera de Alineamiento 2 y la cuarta de Gestión 3) y cambió las de X.7 para las nuevas columnas del Excel. Antes de implementar los dos métodos nuevos, la X.1 era la única que fallaba, porque el diagrama de Elaboration II ya los declaraba. Con tres fallos introducidos a propósito en una copia fuera del repositorio (divisor fijo de 4 en el promedio, `validarCamposVacios` aplicado también a RADAR y eje del gráfico ajustado al máximo observado), fallaron 7, 5 y 1 comprobaciones, respectivamente.
+Comando: `node tests/elaboration1.test.js`. Resultado de la última corrida: 45 de 45 comprobaciones correctas (las 32 anteriores, que incluyen la X.1 contra el diagrama de clases con `calcularRadar` y `dibujarRadar`, más RE.1 a RE.12 y X.7; eran 44 de 44 antes de la prueba RE.12). La ronda correctiva del texto del profesor no agregó comprobaciones: agregó aserciones dentro de RE.7 (14 títulos, 56 afirmaciones, `afirmaciones.length` igual a `caracteristicas` en los 14 componentes y el texto exacto de la primera afirmación de Movilización 1, la quinta de Traducción 1, la primera de Alineamiento 2 y la cuarta de Gestión 3) y cambió las de X.7 para las nuevas columnas del Excel. La ronda de las dos columnas (punto 7) agregó la prueba RE.12, que lee el marcado estático de la sección RADAR y comprueba que hay un solo `.formulario`, `.errores`, `.resultados` y `.grafico`, y que `.errores` y `.grafico` están dentro de un `.panel-radar` que va después de `.formulario` y antes de `.resultados`. Con una mutación en una copia fuera del repositorio (quitar el `div class="grafico"` de la sección RADAR) RE.12 falló, con el mensaje "cantidad de .grafico: se esperaba 1 y salió 0" y 44 de 45 correctas; con una segunda mutación (sacar el `div class="grafico"` del panel, dejándolo después de él) RE.12 también falló. Antes de implementar los dos métodos nuevos, la X.1 era la única que fallaba, porque el diagrama de Elaboration II ya los declaraba. Con tres fallos introducidos a propósito en una copia fuera del repositorio (divisor fijo de 4 en el promedio, `validarCamposVacios` aplicado también a RADAR y eje del gráfico ajustado al máximo observado), fallaron 7, 5 y 1 comprobaciones, respectivamente.
 
 Las pruebas que dependen del dibujo y del formulario (RE.4 a RE.7) no tienen navegador. Para que no queden sin verificar, el arnés usa un DOM simulado mínimo y comprueba la estructura de lo que generan `dibujarRadar` y `formularioRadar`: cuántos puntos hay, a qué fracción del radio, sobre qué punta, qué rótulos, cuántos campos y cuántos botones. No comprueba cómo se ve en pantalla. La tabla de índices de esas pruebas está transcrita de Elaboration I, sin derivarla de la aplicación, para comprobar la aplicación contra ella.
 
@@ -2780,9 +2780,44 @@ En la ronda correctiva se repitió el recorrido con el caso de RE.1 cargado y se
 ### 6. Qué queda para Construction III
 
 - El resultado visual real de `dibujarRadar` (si los 14 rótulos se leen sin pisarse, el aspecto de los puntos y los anillos, el radar con muy pocos puntos) y el aspecto del formulario con sus 56 campos.
-- La usabilidad de escribir 56 calificaciones: orden de tabulación, y si conviene un control distinto de un campo de texto. Hallazgo de la revisión del juez: con las 56 afirmaciones a la vista, la página mide unos 5600 píxeles de alto, y el mensaje de error y el gráfico quedan muy por debajo de los campos, lejos de lo que el estudiante acaba de escribir. No se rediseñó en esta fase.
+- La usabilidad de escribir 56 calificaciones: orden de tabulación, y si conviene un control distinto de un campo de texto. Hallazgo de la revisión del juez: con las 56 afirmaciones a la vista, la página mide unos 5600 píxeles de alto, y el mensaje de error y el gráfico quedan muy por debajo de los campos, lejos de lo que el estudiante acaba de escribir. Ver el punto 7.
 - La apertura del archivo `Mtx-RADAR.xlsx` en un programa de hojas de cálculo, con componentes incompletos e inválidos.
 - Navegadores distintos de Chrome y el archivo descargado de internet: nada de esto se verificó en esta fase.
+- La comprobación de la disposición de dos columnas del punto 7 en el navegador real del equipo (Chrome, Edge y Firefox), incluido el selector `:has()`.
+
+### 7. Ronda correctiva: disposición en dos columnas
+
+Hallazgo del juez al renderizar el módulo en un navegador real: con las 56 afirmaciones a la vista, la página de RADAR medía unos 5900 píxeles de alto, y el recuadro de errores y el gráfico quedaban al final, lejos de los campos que la persona está escribiendo.
+
+**Contrato.** Con una ventana de 75rem (1200 px) o más, dos columnas: a la izquierda el formulario y a la derecha un panel con el recuadro de errores (cuando hay) y el gráfico, fijo (`position: sticky`) en la parte alta de la ventana mientras se recorren los 56 campos, con un alto máximo igual al de la ventana menos un margen y desplazamiento interno solo como último recurso. La tabla de resultados y su nota van debajo de las dos columnas, a todo el ancho. Con menos de 75rem, una sola columna en el orden formulario, errores, gráfico y resultados, con el gráfico centrado y de no más de 36rem. El ancho máximo de `main` (64rem) pasa a 92rem solo cuando la sección RADAR está visible y solo con 75rem o más; las otras ocho secciones conservan 64rem. No cambia ningún JavaScript, dato, persistencia, exportación ni texto.
+
+**Solución adoptada.** La referencia del juez, tal cual. En el marcado de `matriz-radar` solo cambia el orden de los bloques y aparece el contenedor `panel-radar`, que agrupa `.errores` y `.grafico`; las cuatro clases que usa el código se conservan. El código las busca con `querySelector` desde la sección (o con un selector descendiente), así que las encuentra dentro del panel. El CSS nuevo es un bloque justo después de la regla `.grafico svg`: una consulta de medios de 75rem con una cuadrícula de dos columnas (la derecha de 36rem) y el selector `main:has(#matriz-radar:not([hidden]))` para ampliar `main` a 92rem, más una regla que limita el `svg` del gráfico a 36rem y lo centra.
+
+**Decisiones del juez**
+
+- La tabla de resultados queda debajo, a todo el ancho, y no dentro del panel fijo. Medida en la captura, la tabla de 15 filas mide unos 470 px y el panel ya mide unos 680 px, así que juntos pasarían de los 744 px disponibles en una ventana de 768 de alto.
+- La columna derecha reserva su espacio con el módulo vacío, para que el diseño no se reacomode cuando aparece el primer componente completo. Es deliberado.
+- Los umbrales son 75rem para pasar a dos columnas, 92rem de ancho máximo de `main` y 36rem para el panel y el gráfico.
+- Los celulares (390 px de ancho) no se atienden en esta fase: ahí el gráfico mide unos 324 px y sus rótulos quedan en unos 6 px. Es una observación para Construction III, no un defecto corregido.
+
+**Mediciones** (navegador integrado del escritorio de Claude, sobre una copia servida desde un servidor temporal fuera del repositorio, ya detenido; con `getBoundingClientRect`; datos de RE.1 más Movilización 2 incompleta y un 7 en Alineamiento 2, característica 1). Los anchos de documento son el `clientWidth`, que descuenta la barra de desplazamiento de 15 px.
+
+| Criterio | Medición |
+|---|---|
+| C1. `svg` y `ul` de errores dentro de la ventana, con la página al 25, 50 y 75 % | A 1366 por 768: `svg` en y de 76 a 661 (alto 585) y x de 742 a 1318; `ul` en y de 24 a 64. A 1280 por 720: `svg` en y de 76 a 661 y x de 656 a 1232; `ul` en y de 24 a 64. Los mismos valores en los tres puntos de desplazamiento; todo queda dentro de la ventana. El panel mide 657 px de alto, que con el margen superior de 12 px cabe en 720. |
+| C2. Ancho del `svg` | 576 px a 1366 por 768 y a 1280 por 720 (al menos 560). |
+| C3. Sin desborde horizontal (`scrollWidth` y `clientWidth`) | 1366 por 768: 1351 y 1351. 1280 por 720: 1265 y 1265. 1200 por 800: 1185 y 1185. 1190 por 800: 1175 y 1175. 390 por 844: 390 y 390. |
+| C4. Ancho de `main` en las otras ocho secciones a 1366 por 768 | 1024 px en BCG, EFI, EFE, MPC, PEYEA, MIE, GE y AE, antes y después de visitar RADAR; igual a lo que daba `HEAD` antes de esta ronda (medido sobre una copia sin la ronda). En RADAR, `main` mide 1351 px, que es todo el ancho disponible (el máximo de 92rem no se alcanza). |
+| C5. Una sola columna por debajo de 75rem | 1190 por 800: `display: block`; tope vertical del formulario 145, errores 4400, gráfico 4453, resultados 5046; `svg` de 576 px. 390 por 844: `display: block`; 304, 8796, 8871 y 9208; `svg` de 324 px. |
+| C6. Orden de los campos | Los 56 `data-campo` del documento son `calificaciones.0` a `calificaciones.55`, en orden; ningún `tabindex`. Con la tecla Tab real: 10 pulsaciones desde el campo 0 llevan al 10, y 45 más al 55 (en y 695 dentro de la ventana, con la página desplazada 4265 px). Con el foco en el campo 55 el `svg` sigue en y de 76 a 661 y el `ul` de 24 a 64. |
+| C7. Módulo vacío (1366 por 768) | Ningún `svg`; `.errores` y `.grafico` sin hijos; `.resultados` con solo "Complete o corrija los datos para ver el resultado."; el panel existe, con 576 px de ancho (la columna reservada) y 0 de alto; sin desborde. |
+| C8. `git diff` de `index.html` | 14 líneas agregadas y 2 quitadas, en dos hunks: las líneas 40 a 49 (el bloque CSS nuevo, dentro de `<style>`, que cierra en la 84) y las 171 a 175 (el marcado de la sección, entre `<main>` en la 103 y `</main>` en la 177). Los bloques `<script id="sheetjs">` (línea 179) y `<script id="app">` (línea 211) no cambian. |
+| C9. Pruebas | 45 de 45. En `tests/elaboration1.test.js` solo cambia el comentario del encabezado que cuenta las pruebas y se inserta RE.12; ninguna prueba anterior se cambió ni se eliminó. |
+| C10. Consola | Sin errores ni advertencias. La consola del navegador estaba vacía tras cada carga, y una captura propia de `console.error`, `console.warn` y del evento `error` de la ventana, activa mientras se escribían calificaciones y se visitaban las nueve secciones, quedó con 0 entradas. |
+
+Altura total de la página con esos datos a 1366 por 768: 6024 px antes de esta ronda (medida sobre una copia sin ella) y 5636 después. La página sigue siendo larga; lo que cambia es que el panel con los errores y el gráfico acompaña a la persona mientras recorre los campos. A 1280 por 720 mide 5940 px y a 1200 por 800, 6320 px, porque la columna del formulario es más angosta y las afirmaciones ocupan más líneas.
+
+**[VERIFICAR]** El soporte del selector `:has()` en las versiones de Edge y Firefox del equipo donde se use la aplicación. Si el navegador no lo soporta, `main` conserva 64rem y la columna del formulario queda angosta (unos 360 px) pero usable. Construction III lo prueba en Edge y Firefox. Todo lo medido arriba se midió en un solo navegador, el integrado del escritorio de Claude.
 
 ### Puntos [VERIFICAR] para el profesor
 
