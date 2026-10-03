@@ -68,6 +68,7 @@
     .componente-radar { margin: 0.5rem 0 0.75rem 0.75rem; }
     .componente-radar h4 { margin: 0.5rem 0 0.1rem; font-size: 0.95rem; }
     .componente-radar input[type="text"] { width: 3rem; text-align: center; }
+    .punto-radar { fill: #c0392b; stroke: #fff; stroke-width: 2; }
   </style>
 </head>
 <body>
@@ -1013,6 +1014,57 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         contenedor.append(svg('svg', {
           viewBox: '0 0 ' + ancho + ' ' + alto, role: 'img', 'aria-label': 'Plano de Análisis Estructural con las variables ubicadas por motricidad y dependencia'
         }, nodos));
+      },
+
+      // Radar de 14 puntas (una por componente, en el orden de ESTRUCTURA_RADAR, la primera arriba y en sentido horario). El eje es
+      // fijo: 0 en el centro y 5 en el borde exterior, sin ajustarse al máximo observado. Como la escala está invertida, un punto que se
+      // aleja del centro señala un problema. Dibuja un punto solo donde estado es "completo"; no vuelve a decidir nada de lo que ya
+      // decidió calcularRadar. Cada punta se rotula "<Etapa> <posición>".
+      dibujarRadar(resultado) {
+        const contenedor = contenedorGrafico('RADAR');
+        const ancho = 640, alto = 620, cx = 320, cy = 285, radio = 200;
+        const MAXIMO_EJE = 5;
+        const cantidad = ESTRUCTURA_RADAR.length;
+        const angulo = (k) => -Math.PI / 2 + (2 * Math.PI * k) / cantidad;
+        const px = (k, valor) => cx + radio * (valor / MAXIMO_EJE) * Math.cos(angulo(k));
+        const py = (k, valor) => cy + radio * (valor / MAXIMO_EJE) * Math.sin(angulo(k));
+        const nodos = [];
+
+        for (let v = 1; v <= MAXIMO_EJE; v++) {
+          nodos.push(svg('circle', { cx, cy, r: (radio * v) / MAXIMO_EJE, fill: 'none', class: v === MAXIMO_EJE ? 'g-eje' : 'g-rejilla' }));
+        }
+        ESTRUCTURA_RADAR.forEach((componente, k) => {
+          const coseno = Math.cos(angulo(k));
+          nodos.push(
+            svg('line', { x1: cx, y1: cy, x2: px(k, MAXIMO_EJE), y2: py(k, MAXIMO_EJE), class: 'g-rejilla' }),
+            texto(cx + (radio + 12) * coseno, cy + (radio + 12) * Math.sin(angulo(k)) + 4, componente.nombre, 'g-texto',
+              { 'text-anchor': coseno > 0.2 ? 'start' : (coseno < -0.2 ? 'end' : 'middle') })
+          );
+        });
+        for (let v = 0; v <= MAXIMO_EJE; v++) {
+          nodos.push(texto(cx + 4, cy - (radio * v) / MAXIMO_EJE + (v === 0 ? 14 : -3), v, 'g-texto-tenue'));
+        }
+
+        resultado.forEach((componente, k) => {
+          if (componente.estado !== 'completo') return;
+          const x = px(k, componente.puntaje);
+          const y = py(k, componente.puntaje);
+          nodos.push(svg('g', {}, [
+            svg('circle', { cx: x, cy: y, r: 6, class: 'punto-radar' }, [
+              svg('title', {}, [ESTRUCTURA_RADAR[k].nombre + ': ' + dosDecimales(componente.puntaje)])
+            ]),
+            texto(x + 9, y - 9, dosDecimales(componente.puntaje), 'g-texto')
+          ]));
+        });
+
+        nodos.push(
+          texto(cx, alto - 52, 'Escala invertida: 0 en el centro (el objetivo ideal ya se cumple) y 5 en el borde (máximo alejamiento).', 'g-texto-tenue', { 'text-anchor': 'middle' }),
+          texto(cx, alto - 32, 'Un punto que se aleja del centro señala un problema en ese componente, no una fortaleza.', 'g-texto-tenue', { 'text-anchor': 'middle' }),
+          texto(cx, alto - 12, 'Solo se grafican los componentes con todas sus características calificadas.', 'g-texto-tenue', { 'text-anchor': 'middle' })
+        );
+        contenedor.append(svg('svg', {
+          viewBox: '0 0 ' + ancho + ' ' + alto, role: 'img', 'aria-label': 'Radar Estratégico de 14 puntas, una por componente, con el eje de 0 en el centro a 5 en el borde'
+        }, nodos));
       }
     };
 
@@ -1624,6 +1676,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           else if (matriz === 'PEYEA') MotorGraficos.dibujarPEYEA(evaluacion.resultado);
           else if (matriz === 'MIE') MotorGraficos.dibujarMIE(evaluacion.resultado);
           else if (matriz === 'AE') MotorGraficos.dibujarAE(evaluacion.resultado);
+          else if (matriz === 'RADAR') MotorGraficos.dibujarRadar(evaluacion.resultado);
           // EFI, EFE y MPC no llevan gráfico en esta fase [VERIFICAR] (Elaboration II, punto 3): solo tabla.
           else seccionDe(matriz).querySelector('.grafico').replaceChildren();
         } else {
