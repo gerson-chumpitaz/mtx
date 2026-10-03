@@ -401,6 +401,7 @@ classDiagram
         +ubicarMIE(totalEFI, totalEFE) ResultadoMIE
         +ubicarGE(ejes) ResultadoGE
         +calcularAE(variables, matriz) ResultadoAE
+        +calcularRadar(calificaciones) ResultadoRadar
     }
     class MotorGraficos {
         +dibujarBCG(resultado)
@@ -408,6 +409,7 @@ classDiagram
         +dibujarMIE(resultado)
         +dibujarGE(resultado)
         +dibujarAE(resultado)
+        +dibujarRadar(resultado)
     }
     class Persistencia {
         +guardar(estado)
@@ -426,7 +428,7 @@ classDiagram
 
 Notas del diagrama de clases:
 
-- `calcularAE` y `dibujarAE` se agregaron en la Elaboration II del Módulo 2 (Análisis Estructural). Las otras firmas no cambian.
+- `calcularAE` y `dibujarAE` se agregaron en la Elaboration II del Módulo 2 (Análisis Estructural). `calcularRadar` y `dibujarRadar` se agregaron en la Elaboration II del Módulo 3 (Radar Estratégico). Las otras firmas no cambian.
 - Las firmas de `ubicarGE` y `dibujarGE` son provisionales: dependen de las decisiones pendientes de la Historia 6 (origen y escala de los ejes) [VERIFICAR].
 - El Motor de Gráficos solo lista los métodos de las matrices con representación visual definida en Elaboration I (BCG, PEYEA, MIE, GE). [VERIFICAR] si EFI, EFE y MPC llevan también una representación gráfica (por ejemplo barras en el MPC) o solo tabla.
 
@@ -2387,3 +2389,170 @@ Puntos de esta fase:
 2. **Título repetido de los dos componentes de Alineamiento [VERIFICAR].** Sigue pendiente del profesor (punto 1 de la Inception de este módulo). La prueba RE.8 no depende de cuál sea el título correcto.
 3. **Calificaciones con decimales [VERIFICAR].** La escala es de 0 a 5 con seis niveles con nombre. Ninguna prueba fija si un valor como 2.5 se rechaza. Se asume que sí, igual que en los otros dos módulos, pero no se fija con una prueba numérica.
 4. **Redacción y mecanismos que se definen en el diseño.** Las pruebas RE.6 y RE.10 no fijan la redacción exacta de los avisos ni de los mensajes de error, y la prueba RE.3 no fija si el gráfico vacío muestra su marco con las 14 puntas rotuladas o un aviso. Tampoco se fija cómo se identifica visualmente un componente "incompleto" frente a uno "vacío" en la interfaz (si es que se distinguen); las pruebas solo exigen que ninguno tenga puntaje, punto ni error.
+
+## Elaboration II — Módulo 3: Radar Estratégico
+
+Objetivo de la fase: definir qué suma Radar Estratégico a la arquitectura de seis componentes ya fijada en Elaboration II del Módulo 1, con escenarios y diagramas, sin escribir código. Las fórmulas, los estados de cada componente y las reglas de validación ya fijados en Elaboration I de este módulo (pruebas RE.1 a RE.11) no se reinterpretan aquí; los componentes solo las aplican. Lo que esta fase no resuelve se marca [VERIFICAR] y se consolida al final.
+
+Principios de la arquitectura: se mantienen los del Módulo 1 sin cambios. La Vista es el único orquestador, el Validador y el Motor de Cálculo no dependen del navegador, los datos ingresados se guardan en cada cambio sean válidos o no, y los resultados solo se calculan y muestran cuando la validación pasa. Lo que Radar Estratégico suma a la fuente de verdad: lo que el usuario ingresó son las calificaciones de las 56 características, y algunas pueden estar sin calificar. El puntaje de cada componente, su estado (completo, incompleto o vacío) y la posición de su punto en el radar se recalculan cuando hacen falta y no se guardan. La estructura (etapas, componentes y características) es contenido fijo del profesor y no forma parte de los datos del estudiante, así que tampoco se guarda. Una diferencia con los módulos anteriores: aquí la validación y el cálculo trabajan componente por componente, no sobre el módulo completo. Un componente que no está completo no corta el flujo de los otros trece (ver el escenario RE-2).
+
+### 1. Componentes del framework
+
+No se repite la tabla de los seis componentes del Módulo 1. Solo se agrega lo que Radar Estratégico suma a cada uno.
+
+| Componente | Qué suma Radar Estratégico |
+|---|---|
+| Vista | Ningún método nuevo. Reutiliza `renderFormulario`, `renderResultados` y `despacharEvento` con un noveno valor de matriz, `"RADAR"`, para las 56 calificaciones agrupadas en cinco etapas y el radar de 14 puntas. Pregunta abierta para Construction I: si conviene seguir llamando "matriz" a ese discriminador cuando este módulo no tiene ninguna matriz NxN, o generalizar el nombre del campo ahora que ya no describe solo matrices [VERIFICAR]. |
+| Validador | Reutiliza `validarRango` con los límites de este módulo (0 a 5) sobre cada calificación (RE.10). La clasificación de cada componente en completo, incompleto o vacío no es el patrón binario de vacía o inválida que ya existe en los otros módulos, y probablemente necesita un método o ayudante nuevo. Pregunta abierta para Construction I, no se decide aquí [VERIFICAR]. |
+| Motor de Cálculo | Método nuevo `calcularRadar(calificaciones)`. Aplica exactamente la regla ya fijada y probada en Elaboration I: el puntaje de cada componente es el promedio de las calificaciones de sus propias características, con el número de características de ese componente como divisor, y solo se calcula si el componente está completo. Devuelve un `ResultadoRadar` con el estado de los 14 componentes y el puntaje de los completos. |
+| Motor de Gráficos | Método nuevo `dibujarRadar(resultado)`. Dibuja el radar de 14 puntas, cada una rotulada con el nombre corto de la etapa de su componente (RE.5), con el eje fijo de 0 en el centro a 5 en el borde, sin ajustarse al máximo observado (RE.4). Grafica solo los puntos de los componentes completos. |
+| Persistencia | Sin cambios: se reutiliza tal cual. Guarda las 56 calificaciones, con sus huecos, como parte del estado de la sesión. |
+| Exportador | Sin cambios en su firma. Qué contiene el archivo de este módulo queda abierto en el escenario RE-4. |
+
+Consecuencia que debe recogerse en Construction I de este módulo: la decisión de Construction I dice que `matriz` es siempre un string con una de ocho siglas (las siete del Módulo 1 y `"AE"`). Con `"RADAR"` pasan a ser nueve, por lo que esa frase quedará desactualizada y pedirá un commit de sincronización en esa fase, igual que cuando se agregó `"AE"`. Tampoco se decide aquí cómo se acomodan las calificaciones de este módulo en el estado guardado ni si el formato guardado cambia de versión [VERIFICAR].
+
+Relación con las pruebas de Elaboration I de este módulo. Se usa una tabla aparte de las de los módulos anteriores, porque aquí las pruebas se cruzan contra los dos métodos nuevos y no contra componentes completos:
+
+| Prueba | `calcularRadar` | `dibujarRadar` | Otros componentes que la ejercitan |
+|---|---|---|---|
+| RE.1 | Cuatro promedios con divisores 4, 5, 3 y 4 (1.50, 3.00, 0.00 y 5.00) y diez componentes vacíos | Cuatro puntos: al 30 % del radio, al 60 %, en el centro y en el borde | Vista |
+| RE.2 | Componente 2 de Movilización incompleto sin puntaje, y luego completo con 2.50 | El punto no aparece mientras está incompleto y aparece en la punta 2 al 50 % del radio al completarlo | Vista |
+| RE.3 | Los 14 componentes vacíos | Radar sin ningún punto | Vista |
+| RE.4 | Puntaje 1.50 de un solo componente | Punto al 30 % del radio, con el eje fijo de 0 a 5 | |
+| RE.5 | No interviene | 14 puntas rotuladas con la etapa, y los cuatro puntos en las puntas 1, 4, 6 y 14 | |
+| RE.6 | No interviene | No interviene | Vista (escala de seis niveles y avisos de lectura invertida) |
+| RE.7 | No interviene | No interviene | Vista (estructura fija y ningún control para alterarla) |
+| RE.8 | Dos componentes de Alineamiento calculados de forma independiente | Puntos en las puntas 7 y 8 | |
+| RE.9 | Recalcula el puntaje al editar, y devuelve el componente a incompleto al borrar | El punto se mueve o desaparece | Vista y Persistencia |
+| RE.10 | No calcula el componente inválido y calcula los otros tres | Sin punto para el componente inválido | Validador y Vista (muestra el error) |
+| RE.11 | Recalcula los mismos resultados de RE.1 y el componente incompleto sigue incompleto | Vuelve a dibujar los mismos cuatro puntos | Persistencia, Validador y Vista |
+
+### 2. Escenarios (plays)
+
+**Escenario RE-1: flujo principal, del calificar al radar**
+
+El estudiante abre el módulo de Radar Estratégico y empieza a calificar características. Con cada cambio, la Vista pide a la Persistencia que guarde el estado y pasa las calificaciones al Validador, que confirma que todos los valores escritos están entre 0 y 5. La Vista pasa las calificaciones al Motor de Cálculo, que clasifica cada uno de los 14 componentes y calcula el puntaje de los que están completos. La Vista entrega ese resultado al Motor de Gráficos, que dibuja el radar con sus 14 puntas rotuladas por etapa y el eje fijo de 0 a 5, con el punto de cada componente completo. Mientras el estudiante avanza, el radar va mostrando los puntos solo de los componentes que se completan. Con las calificaciones de la prueba RE.1 el radar muestra cuatro puntos, con 1.50, 3.00, 0.00 y 5.00 en las puntas 1, 4, 6 y 14, y las otras diez puntas siguen sin punto aunque ya estén rotuladas. Junto a la calificación y al gráfico, la Vista muestra la escala de seis niveles y los avisos de lectura invertida (RE.6).
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+
+**Escenario RE-2: componente sin completar, sin rechazo**
+
+El estudiante califica solo dos de las cuatro características del componente 2 de Movilización, como en la prueba RE.2, o no ha calificado ninguna característica de un componente, como en la prueba RE.3. La Vista guarda el estado en la Persistencia y pasa las calificaciones al Validador, que no encuentra ningún valor fuera de rango y no devuelve ningún error. El Motor de Cálculo clasifica ese componente como "incompleto" (o "vacío") y no calcula su puntaje. El Motor de Gráficos no recibe ni dibuja ningún punto para ese componente, y la Vista no muestra ningún aviso de error ni bloquea nada: los componentes completos siguen con su puntaje y su punto. Cuando el estudiante termina de calificar las características que faltan, el componente pasa a "completo" y su punto aparece. A diferencia del Escenario AE-2, aquí no hay rechazo ni mensaje de error, y el flujo no se corta: el Motor de Cálculo y el Motor de Gráficos sí se invocan.
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+Este escenario cubre las pruebas RE.2 y RE.3. [VERIFICAR] si el filtro que deja fuera del gráfico a los componentes no completos lo hace el Motor de Cálculo (`ResultadoRadar` trae puntaje solo en los completos) o el Motor de Gráficos (`dibujarRadar` recibe los 14 estados y decide qué dibuja). Se decide en Construction I, junto con la forma de `ResultadoRadar`.
+
+**Escenario RE-3: calificación fuera de rango**
+
+El estudiante escribe, o llega al sistema, una calificación fuera de 0 a 5 en una característica (por ejemplo 6) del componente 1 de Movilización, como en la prueba RE.10. La Vista guarda el estado en la Persistencia, sin perder el valor escrito, y pasa las calificaciones al Validador, que detecta el valor fuera de rango y devuelve un error asociado a ese componente. La Vista muestra el error. Ese componente queda "inválido": no se calcula y no tiene punto. Los otros trece componentes no se ven afectados: la Vista sigue pasando sus calificaciones al Motor de Cálculo y al Motor de Gráficos, y los componentes completos mantienen su puntaje y su punto. Es la diferencia con los módulos anteriores, donde un error de validación corta todo el flujo.
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+Este escenario cubre la prueba RE.10. [VERIFICAR] cómo se excluye el componente inválido del cálculo: si el Validador devuelve los errores por componente y la Vista le pasa al Motor de Cálculo solo los componentes sin error, o si `calcularRadar` reconoce el estado "inválido" por sí mismo. Se decide en Construction I, junto con la pregunta abierta del Validador de la tabla de arriba.
+
+**Escenario RE-4: exportación a Excel**
+
+Con el radar de RE.1 ya calculado, el usuario pulsa "Exportar". La Vista pasa los datos al Validador, que confirma que no hay valores fuera de rango. La Vista pide el resultado al Motor de Cálculo y entrega al Exportador el módulo, los datos ingresados y el resultado. El Exportador genera el archivo .xlsx con la librería embebida y la Vista dispara la descarga, todo sin conexión a internet. Si hay un valor fuera de rango, la Vista muestra el error y no llama al Exportador, como en el escenario 4 del Módulo 1.
+Componentes: Vista, Validador, Motor de Cálculo, Exportador.
+[VERIFICAR] qué contiene la hoja exportada: las 56 calificaciones crudas, los 14 promedios por componente, o ambas cosas en hojas separadas, igual que el Escenario AE-3 dejó abierto para su propia matriz. Falta decidir también qué se escribe para los componentes incompletos y vacíos (celda en blanco, un texto o nada) y si se puede exportar con algún componente sin completar. Como referencia, el Módulo 1 exporta dos hojas, "Datos" y "Resultados", con solo valores y sin imagen del gráfico, de forma provisional.
+
+**Escenario RE-5: recuperación tras recargar**
+
+El estudiante recarga la página o vuelve a abrir el archivo, con el estado de la prueba RE.11 ya guardado: cuatro componentes completos y el componente 2 de Movilización con dos características calificadas. La Vista pide a la Persistencia el estado guardado. Si existe, la Vista vuelve a llenar las 56 calificaciones, incluidas las de un componente incompleto, y el Validador revisa los datos. El Motor de Cálculo recalcula los mismos resultados de RE.1 y clasifica de nuevo el componente 2 de Movilización como incompleto, y el Motor de Gráficos vuelve a dibujar los mismos cuatro puntos. Si el almacenamiento está vacío, corrupto o inaccesible, la Persistencia devuelve un estado vacío y la Vista muestra el módulo en blanco, con los 14 componentes vacíos.
+Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
+Este escenario cubre la prueba RE.11. Aplica a este módulo el mismo punto abierto del escenario 5 del Módulo 1 (aviso al descartar un estado corrupto), sin agregar otros: el mensaje de error de una matriz incompleta tras la recarga no aplica, porque aquí un componente incompleto no es un error.
+
+Cobertura de componentes por escenario:
+
+| Componente | RE-1 | RE-2 | RE-3 | RE-4 | RE-5 |
+|---|---|---|---|---|---|
+| Vista | sí | sí | sí | sí | sí |
+| Validador | sí | sí | sí | sí | sí |
+| Motor de Cálculo | sí | sí | sí | sí | sí |
+| Motor de Gráficos | sí | sí | sí | no | sí |
+| Persistencia | sí | sí | sí | no | sí |
+| Exportador | no | no | no | sí | no |
+
+### 3. Diagramas
+
+**Diagrama de clases**
+
+No se crea un diagrama nuevo. Se editó el `classDiagram` de la Elaboration II del Módulo 1 (arriba, en este documento) para agregar `+calcularRadar(calificaciones) ResultadoRadar` a `MotorCalculo` y `+dibujarRadar(resultado)` a `MotorGraficos`. Las demás clases y relaciones no cambian.
+
+**Diagrama de secuencia del escenario RE-1: flujo principal**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    participant MC as Motor de Cálculo
+    participant MG as Motor de Gráficos
+    U->>V: califica características de uno o varios componentes
+    V->>P: guardar(estado)
+    V->>VA: validar(RADAR, datos)
+    VA-->>V: ninguna calificación fuera de rango
+    V->>MC: calcularRadar(calificaciones)
+    MC-->>V: estado de los 14 componentes y puntaje de los completos
+    V->>MG: dibujarRadar(resultado)
+    MG-->>V: radar de 14 puntas rotuladas con los puntos de los completos
+    V-->>U: muestra el radar, los puntajes y los avisos de lectura invertida
+```
+
+**Diagrama de secuencia del escenario RE-2: componente sin completar, sin rechazo**
+
+A diferencia del diagrama del Escenario AE-2, el flujo no se corta después del Validador: el cálculo y el gráfico se ejecutan igual, y no hay ningún mensaje de error.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    participant MC as Motor de Cálculo
+    participant MG as Motor de Gráficos
+    U->>V: deja un componente con características sin calificar
+    V->>P: guardar(estado)
+    V->>VA: validar(RADAR, datos)
+    VA-->>V: ninguna calificación fuera de rango, sin error
+    V->>MC: calcularRadar(calificaciones)
+    MC-->>V: ese componente incompleto o vacío sin puntaje, los demás con su estado
+    V->>MG: dibujarRadar(resultado)
+    MG-->>V: radar sin punto para ese componente
+    V-->>U: muestra el radar sin aviso de error
+```
+
+**Diagrama de secuencia del escenario RE-3: calificación fuera de rango**
+
+Tampoco se corta todo el flujo: el error afecta solo a un componente.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant V as Vista
+    participant P as Persistencia
+    participant VA as Validador
+    participant MC as Motor de Cálculo
+    participant MG as Motor de Gráficos
+    U->>V: escribe una calificación fuera de 0 a 5
+    V->>P: guardar(estado)
+    V->>VA: validar(RADAR, datos)
+    VA-->>V: error de rango en un componente
+    V->>MC: calcularRadar(calificaciones de los demás componentes)
+    MC-->>V: estado y puntaje de los demás componentes
+    V->>MG: dibujarRadar(resultado)
+    MG-->>V: radar sin punto para el componente inválido
+    V-->>U: muestra el error de ese componente y el radar de los demás
+```
+
+Los escenarios RE-4 y RE-5 no tienen diagrama propio: siguen la misma secuencia que los escenarios 4 y 5 del Módulo 1, con el valor de matriz `"RADAR"` y las llamadas `calcularRadar` y `dibujarRadar` en lugar de las de EFI.
+
+### Puntos nuevos marcados [VERIFICAR] en esta fase
+
+1. Discriminador `matriz`: si se sigue llamando así con el noveno valor `"RADAR"` o se generaliza el nombre del campo. Se decide en Construction I, junto con la sincronización de la frase de las ocho siglas.
+2. Validador: si la clasificación de cada componente en completo, incompleto o vacío necesita un método o ayudante nuevo, y cómo se excluye de los cálculos un componente con una calificación fuera de rango (escenario RE-3). Se decide en Construction I.
+3. Filtro de los componentes no completos: si lo hace `calcularRadar` o `dibujarRadar`, y la forma de `ResultadoRadar` (escenario RE-2). Se decide en Construction I.
+4. Estructura del Excel exportado del módulo: calificaciones crudas, promedios por componente o ambas en hojas separadas, y qué se escribe para los componentes no completos (escenario RE-4).
+5. Estado guardado: cómo se acomodan las 56 calificaciones con sus huecos, y si el formato guardado cambia de versión. Se decide en Construction I.
+6. El punto abierto de recuperación de sesión del Módulo 1 (aviso al descartar un estado corrupto) aplica también a este módulo.
+7. Siguen abiertos los puntos de Elaboration I de este módulo: el título repetido de los dos componentes de Alineamiento, las calificaciones con decimales, y la redacción de avisos y errores junto con el aspecto del radar vacío.
