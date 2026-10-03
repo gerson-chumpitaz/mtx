@@ -1247,6 +1247,21 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
             .concat([[], ['Corte Y', resultado.corteY], ['Corte X', resultado.corteX]]);
           break;
         }
+        case 'RADAR': {
+          // Decisiones F y G de Construction II del Módulo 3: "Datos" = las 56 calificaciones (vacía si no se calificó) y "Resultados" =
+          // los 14 componentes con su estado real (inválido incluido) y el puntaje solo si está completo. Se exporta aunque haya
+          // componentes incompletos, vacíos o inválidos.
+          entrada = [['Etapa', 'Componente', 'Característica', 'Calificación']];
+          ESTRUCTURA_RADAR.forEach((componente) => {
+            for (let i = componente.desde; i <= componente.hasta; i++) {
+              const valor = datos.calificaciones[i];
+              entrada.push([componente.etapa, componente.nombre, 'Característica ' + (i - componente.desde + 1), esVacio(valor) ? null : n(valor)]);
+            }
+          });
+          salida = [['Etapa', 'Componente', 'Estado', 'Puntaje']]
+            .concat(resultado.map((c, k) => [ESTRUCTURA_RADAR[k].etapa, ESTRUCTURA_RADAR[k].nombre, capitalizar(c.estado), c.estado === 'completo' ? c.puntaje : null]));
+          break;
+        }
         default:
           throw new Error('No se puede exportar la matriz ' + matriz + '.');
       }
