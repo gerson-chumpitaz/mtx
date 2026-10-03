@@ -2200,3 +2200,190 @@ Archivos originales del profesor, en `C:\Obsidian\Mi_Segundo_Cerebro\07_gestion_
 - `Guia de uso - Cargar los Modelos Estrategicos.pdf` y `Que carga usted y que sale solo.pdf`: no cubren este modelo, porque se limitan a los tres modelos que dependen de Access.
 
 Este Inception se escribió a partir de esos hallazgos, tal como los entregó el juez. El constructor no volvió a abrir los archivos originales en esta fase.
+
+## Elaboration I — Módulo 3: Radar Estratégico
+
+Objetivo de la fase: definir, para la historia de usuario del módulo, pruebas de aceptación concretas en formato Given-When-Then (Dado / Cuando / Entonces), con valores numéricos y resultado esperado exacto. No hay código en esta fase. Los resultados esperados de la prueba RE.1 los verificó el juez aritméticamente y se transcriben tal cual; los de las demás pruebas se calcularon a mano a partir de las fórmulas de abajo.
+
+Convenciones de esta sección:
+
+- La numeración es "Prueba RE.n" (RE por Radar Estratégico) y no "Prueba X.Y", porque el módulo tiene una sola historia y las pruebas 1.1 a 7.1 y AE.1 a AE.10 ya pertenecen a los módulos anteriores.
+- Los componentes se identifican por su posición dentro de la etapa ("componente 2 de Movilización"), no por su título. Esto es deliberado: dos componentes de Alineamiento comparten título en el documento original (punto 1 de los [VERIFICAR] de la Inception de este módulo) y por eso el título no sirve como identificador. El texto de las 56 afirmaciones es contenido fijo del profesor y no se transcribe aquí: las pruebas solo necesitan la calificación de cada una, que se anota en el orden en que aparecen dentro de su componente.
+- Las calificaciones van de 0 a 5, con la escala invertida: 0 es el mejor valor (el objetivo ideal ya se cumple) y 5 el peor (máximo alejamiento).
+- Los puntajes se comparan con dos decimales. En el radar, la distancia al centro de un punto es su puntaje dividido entre 5, como fracción del radio del gráfico.
+- Las marcas [VERIFICAR] señalan una convención que debe confirmarse con el profesor o con el juez. Se consolidan al final de esta sección.
+
+Estructura fija, transcrita de la Inception (ya verificada contra el Excel original, estas pruebas no la rederivan). Los números de "punta" son el orden de los 14 componentes alrededor del radar:
+
+| Etapa | Componente (posición) | Características | Punta |
+|---|---|---|---|
+| Movilización | 1 | 4 | 1 |
+| Movilización | 2 | 4 | 2 |
+| Movilización | 3 | 4 | 3 |
+| Traducción | 1 | 5 | 4 |
+| Traducción | 2 | 4 | 5 |
+| Traducción | 3 | 3 | 6 |
+| Alineamiento | 1 | 4 | 7 |
+| Alineamiento | 2 | 4 | 8 |
+| Motivación | 1 | 4 | 9 |
+| Motivación | 2 | 4 | 10 |
+| Motivación | 3 | 4 | 11 |
+| Gestión | 1 | 4 | 12 |
+| Gestión | 2 | 4 | 13 |
+| Gestión | 3 | 4 | 14 |
+
+Total: 5 etapas, 14 componentes, 56 características.
+
+Fórmulas verificadas, que estas pruebas no rederivan:
+
+- Puntaje de un componente = promedio (AVERAGE) de las calificaciones de sus propias características. El divisor es la cantidad de características de ese componente (3, 4 o 5), no un número fijo.
+- Un componente tiene tres estados, que se evalúan componente por componente, de forma independiente de los otros trece:
+  - **Completo:** todas sus características tienen calificación válida. Se calcula su puntaje y se grafica su punto.
+  - **Incompleto:** solo algunas de sus características están calificadas. No se calcula, no se grafica y no se muestra ningún error: es un estado normal de trabajo en progreso, no una entrada inválida.
+  - **Vacío:** ninguna de sus características está calificada. No se calcula, no se grafica y no se muestra ningún error.
+- Una calificación fuera de la escala 0 a 5 sí es una entrada inválida (ver la prueba RE.10).
+- El gráfico muestra únicamente los puntos de los componentes completos.
+- El gráfico es un radar de 14 puntas, una por componente, con el eje de valores de 0 en el centro a 5 en el borde exterior.
+
+### Historia: Radar Estratégico
+
+**Prueba RE.1: cuatro componentes completos y diez vacíos (caso principal)**
+
+- Dado que el estudiante califica por completo solo cuatro componentes y deja los otros diez sin tocar:
+  - Componente 1 de Movilización (4 características): 0, 1, 2, 3.
+  - Componente 1 de Traducción (5 características): 0, 0, 5, 5, 5.
+  - Componente 3 de Traducción (3 características): 0, 0, 0.
+  - Componente 3 de Gestión (4 características): 5, 5, 5, 5.
+- Cuando el sistema calcula el radar
+- Entonces se cumple todo lo siguiente:
+  - Resultado por componente:
+
+    | Componente | Calificaciones | Divisor | Puntaje | Estado | Punta | Posición en el radar |
+    |---|---|---|---|---|---|---|
+    | Movilización 1 | 0, 1, 2, 3 | 4 | 1.50 | completo | 1 | al 30 % del radio |
+    | Traducción 1 | 0, 0, 5, 5, 5 | 5 | 3.00 | completo | 4 | al 60 % del radio |
+    | Traducción 3 | 0, 0, 0 | 3 | 0.00 | completo | 6 | en el centro |
+    | Gestión 3 | 5, 5, 5, 5 | 4 | 5.00 | completo | 14 | en el borde exterior |
+
+  - Los otros diez componentes quedan en estado "vacío": no tienen puntaje, no tienen punto en el gráfico y no muestran ningún error.
+  - El gráfico muestra exactamente cuatro puntos.
+  - Esta prueba ejercita a la vez el promedio con tres divisores distintos (4, 5 y 3), un promedio no entero (1.50), el extremo ideal (0.00, en el centro) y el extremo peor (5.00, en el borde). Traducción 3 con 0.00 es un componente completo en el ideal, no un componente sin calificar: el sistema debe distinguirlos, porque los dos tienen "cero" a la vista.
+
+**Prueba RE.2: un componente incompleto no se calcula, y se calcula al completarlo**
+
+- Dado el estado de la prueba RE.1, y que el estudiante califica solo dos de las cuatro características del componente 2 de Movilización: la primera con 1 y la segunda con 3, dejando la tercera y la cuarta sin calificar
+- Cuando el sistema calcula el radar
+- Entonces se cumple todo lo siguiente:
+  - El componente 2 de Movilización queda en estado "incompleto": no tiene puntaje, no tiene punto en el gráfico y no se muestra ningún error (un promedio de 1 y 3 sobre dos valores, que daría 2.00, no debe aparecer).
+  - El gráfico sigue mostrando exactamente los mismos cuatro puntos de la prueba RE.1, sin cambios.
+  - Los otros nueve componentes siguen "vacíos".
+- Cuando después el estudiante califica la tercera con 2 y la cuarta con 4
+- Entonces el componente 2 de Movilización pasa a "completo" con puntaje (1 + 3 + 2 + 4) / 4 = 2.50, aparece su punto en la punta 2 al 50 % del radio, y el gráfico muestra cinco puntos. Los cuatro puntos anteriores no cambian.
+
+**Prueba RE.3: el módulo entero vacío**
+
+- Dado que el estudiante abre el módulo sin haber calificado ninguna de las 56 características
+- Cuando el sistema calcula el radar
+- Entonces los 14 componentes quedan en estado "vacío": ninguno tiene puntaje, el gráfico no tiene ningún punto y no se muestra ningún error. El sistema no bloquea la pantalla ni exige completar nada para poder abrir el módulo y empezar a calificar.
+
+**Prueba RE.4: el eje es fijo de 0 a 5, no se ajusta a los datos**
+
+- Dado que el estudiante califica por completo un solo componente, el componente 1 de Movilización, con 0, 1, 2, 3 (puntaje 1.50), y deja los otros trece sin tocar
+- Cuando el sistema calcula el radar
+- Entonces el gráfico muestra un solo punto, en la punta 1, al 30 % del radio (1.50 / 5). El eje sigue yendo de 0 en el centro a 5 en el borde exterior: el punto no se estira hasta el borde aunque sea el único ni el de mayor valor. Esta prueba detecta un gráfico que ajuste su escala al máximo observado.
+
+**Prueba RE.5: catorce puntas rotuladas con la etapa de cada componente**
+
+- Dado el estado de la prueba RE.1
+- Cuando el estudiante mira el gráfico
+- Entonces se cumple todo lo siguiente:
+  - El gráfico tiene exactamente 14 puntas, una por componente, en el orden de la tabla de estructura fija, aunque solo cuatro de ellas tengan punto.
+  - Cada punta está rotulada, al menos, con el nombre corto de la etapa de su componente: tres puntas "Movilización" (1 a 3), tres "Traducción" (4 a 6), dos "Alineamiento" (7 y 8), tres "Motivación" (9 a 11) y tres "Gestión" (12 a 14).
+  - Los cuatro puntos de la prueba RE.1 caen en las puntas 1 (Movilización), 4 (Traducción), 6 (Traducción) y 14 (Gestión).
+
+El Excel original no rotula las puntas: esta es la mejora de interfaz decidida por el juez en la Inception de este módulo, que no cambia ningún cálculo.
+
+**Prueba RE.6: la lectura invertida está explícita en la interfaz**
+
+- Dado que el estudiante abre el módulo, en cualquier estado de calificación
+- Cuando mira las preguntas y el gráfico
+- Entonces se cumple todo lo siguiente:
+  - Junto a la calificación se muestran los seis niveles de la escala con su texto: 0 "Estoy completamente de acuerdo", 1 "Estoy bastante de acuerdo", 2 "Estoy algo de acuerdo", 3 "No estoy muy de acuerdo", 4 "No estoy casi nada de acuerdo" y 5 "Estoy en completo desacuerdo".
+  - Junto a la escala o al gráfico se indica que 0 es el mejor valor (el objetivo ideal ya se cumple) y 5 el peor (máximo alejamiento).
+  - Junto al gráfico se indica que un punto que se aleja del centro señala un problema en ese componente, no una fortaleza.
+
+La redacción exacta de estos avisos se define en el diseño. La prueba solo fija que existan y que digan lo anterior.
+
+**Prueba RE.7: la estructura es fija y no se puede alterar**
+
+- Dado que el estudiante abre el módulo
+- Cuando recorre las cinco etapas
+- Entonces se cumple todo lo siguiente:
+  - Hay exactamente 5 etapas, con 3, 3, 2, 3 y 3 componentes, es decir 14 componentes.
+  - Los componentes tienen 4, 4, 4 (Movilización), 5, 4, 3 (Traducción), 4, 4 (Alineamiento), 4, 4, 4 (Motivación) y 4, 4, 4 (Gestión) características, es decir 56 características, cada una con su selector de calificación de 0 a 5.
+  - No existe ningún control para agregar o quitar etapas, componentes o características: no hay botones "+" ni "−" como los de Análisis Estructural.
+  - Los nombres de las etapas, los componentes y las características, y el texto de cada afirmación, no son editables.
+
+**Prueba RE.8: los dos componentes de Alineamiento con el mismo título son distintos entre sí**
+
+Ver el punto 1 de los [VERIFICAR] de la Inception de este módulo. Esta prueba no resuelve cuál es el título correcto del segundo componente: solo verifica que el sistema los trate como dos componentes independientes.
+
+- Dado que el estudiante califica por completo solo el componente 2 de Alineamiento, con 3, 3, 3, 3, y deja el componente 1 de Alineamiento sin tocar
+- Cuando el sistema calcula el radar
+- Entonces el componente 2 de Alineamiento queda "completo" con puntaje 3.00, su punto cae en la punta 8, y el componente 1 de Alineamiento queda "vacío", sin punto en la punta 7, aunque los dos tengan el mismo título.
+- Cuando después el estudiante califica por completo el componente 1 de Alineamiento con 1, 1, 1, 1
+- Entonces el componente 1 de Alineamiento pasa a "completo" con puntaje 1.00 y su punto cae en la punta 7. El componente 2 sigue en 3.00 en la punta 8, sin cambios.
+
+**Prueba RE.9: editar una calificación recalcula o devuelve el componente a incompleto**
+
+- Dado el estado de la prueba RE.1
+- Cuando el estudiante cambia la cuarta característica del componente 1 de Movilización de 3 a 5
+- Entonces el puntaje de ese componente pasa a (0 + 1 + 2 + 5) / 4 = 2.00, su punto se mueve de 30 % a 40 % del radio, y los otros tres puntos no cambian.
+- Cuando después el estudiante borra la calificación de la primera característica de ese mismo componente, dejándola sin calificar
+- Entonces el componente 1 de Movilización pasa a "incompleto": su punto desaparece del gráfico, no se muestra ningún error, y el gráfico queda con los otros tres puntos. Las otras tres calificaciones del componente se conservan.
+
+**Prueba RE.10: calificación fuera de rango**
+
+Misma regla que el resto del sistema (como en AE.6): un valor fuera de la escala es una entrada inválida y no se calcula con él. La diferencia con un componente incompleto es que aquí sí se muestra un error.
+
+- Dado el estado de la prueba RE.1, pero con la cuarta característica del componente 1 de Movilización en 6 (o −1) en vez de 3
+- Cuando el sistema calcula el radar
+- Entonces se cumple todo lo siguiente:
+  - El componente 1 de Movilización queda en estado "inválido": se muestra un error que indica que la calificación debe estar entre 0 y 5, no tiene puntaje y no tiene punto en el gráfico.
+  - Los otros tres componentes completos de la prueba RE.1 no se ven afectados: siguen con 3.00, 0.00 y 5.00 y con sus puntos en el gráfico.
+  - El valor escrito se conserva: el estudiante no pierde lo que ya escribió.
+
+El mecanismo por el cual un valor fuera de rango puede llegar al sistema (un campo numérico, datos guardados alterados) se define en el diseño. La prueba solo fija la respuesta del sistema si llega.
+
+**Prueba RE.11: los datos siguen tras recargar**
+
+- Dado el estado de la prueba RE.2 antes de completar el componente 2 de Movilización: los cuatro componentes completos de la prueba RE.1 y el componente 2 de Movilización con solo dos características calificadas (1 y 3)
+- Cuando el estudiante recarga la página o vuelve a abrir el archivo
+- Entonces las calificaciones de las 56 características siguen ahí, tal como estaban, incluidas las dos del componente incompleto. El sistema recalcula los mismos resultados de la prueba RE.1: cuatro puntos con 1.50, 3.00, 0.00 y 5.00, y el componente 2 de Movilización sigue "incompleto", sin punto. Esto aplica al módulo el requisito general de guardado automático de la Inception original.
+
+### Resumen de la fase
+
+| Prueba | Qué verifica | Estado |
+|---|---|---|
+| RE.1 | Promedio con distinto número de características, extremo ideal (centro), extremo peor (borde), no entero, diez componentes vacíos | Con prueba concreta, verificada por el juez |
+| RE.2 | Componente incompleto sin cálculo, ni punto, ni error; paso a completo | Con prueba concreta |
+| RE.3 | Módulo entero vacío | Con prueba concreta |
+| RE.4 | Eje fijo de 0 a 5, sin ajuste a los datos | Con prueba concreta |
+| RE.5 | Catorce puntas rotuladas con la etapa | Con prueba concreta |
+| RE.6 | Lectura invertida explícita en la interfaz (escala de seis niveles, 0 mejor, 5 peor) | Con prueba concreta |
+| RE.7 | Estructura fija: 5 etapas, 14 componentes, 56 características, sin controles para alterarla | Con prueba concreta |
+| RE.8 | Los dos componentes de Alineamiento con el mismo título son independientes | Con prueba concreta, título correcto pendiente [VERIFICAR] |
+| RE.9 | Editar o borrar una calificación recalcula o devuelve a incompleto | Con prueba concreta |
+| RE.10 | Calificación fuera de rango | Con prueba concreta |
+| RE.11 | Persistencia al recargar | Con prueba concreta |
+
+Total: 11 pruebas Given-When-Then.
+
+Nota de consistencia con el Módulo 2: aquí un componente parcialmente calificado queda "incompleto", sin error, mientras que en Análisis Estructural una matriz parcialmente calificada es "inválida". La diferencia es arquitectónica, no un olvido: la matriz de Análisis Estructural es un solo objeto interdependiente (una celda afecta la motricidad y la dependencia de dos variables a la vez), mientras que cada componente del Radar se calcula de forma completamente independiente de los otros trece.
+
+Puntos de esta fase:
+
+1. **Criterio de completitud, resuelto por el juez.** Un componente se calcula y se grafica si todas sus características están calificadas, por componente y no por módulo. Con esto queda resuelto el punto 2 de los [VERIFICAR] de la Inception de este módulo (si exigir las 56 características antes de mostrar el gráfico).
+2. **Título repetido de los dos componentes de Alineamiento [VERIFICAR].** Sigue pendiente del profesor (punto 1 de la Inception de este módulo). La prueba RE.8 no depende de cuál sea el título correcto.
+3. **Calificaciones con decimales [VERIFICAR].** La escala es de 0 a 5 con seis niveles con nombre. Ninguna prueba fija si un valor como 2.5 se rechaza. Se asume que sí, igual que en los otros dos módulos, pero no se fija con una prueba numérica.
+4. **Redacción y mecanismos que se definen en el diseño.** Las pruebas RE.6 y RE.10 no fijan la redacción exacta de los avisos ni de los mensajes de error, y la prueba RE.3 no fija si el gráfico vacío muestra su marco con las 14 puntas rotuladas o un aviso. Tampoco se fija cómo se identifica visualmente un componente "incompleto" frente a uno "vacío" en la interfaz (si es que se distinguen); las pruebas solo exigen que ninguno tenga puntaje, punto ni error.
