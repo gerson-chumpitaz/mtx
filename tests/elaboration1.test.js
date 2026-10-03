@@ -1,6 +1,6 @@
 'use strict';
 // Verifica Validador, MotorCalculo y Exportador de index.html contra las pruebas Given-When-Then de Elaboration I
-// (Módulo 1: pruebas 1.1 a 6.1; Módulo 2, Análisis Estructural: pruebas AE.1 a AE.10).
+// (Módulo 1: pruebas 1.1 a 6.1; Módulo 2, Análisis Estructural: pruebas AE.1 a AE.10; Módulo 3, Radar Estratégico: pruebas RE.1 a RE.11).
 // Uso: node tests/elaboration1.test.js   (sin dependencias; el navegador no interviene)
 
 const fs = require('fs');
@@ -365,6 +365,268 @@ prueba('AE.10', 'AE: los datos siguen tras recargar (persistencia y recálculo)'
   igual(p2.cargar().datos.AE, { variables: [], matriz: [], marcas: [] }, 'AE dañado: AE vacío');
 });
 
+// Historia: Radar Estratégico (Módulo 3). El arnés verifica la validación, el cálculo, el flujo de evaluarMatriz y la persistencia con los
+// mismos datos de Elaboration I. Para lo visual (RE.4 y RE.5 en el dibujo, RE.6 y RE.7 en el formulario) no hay navegador: se usa un DOM
+// simulado mínimo y se comprueba la estructura de lo que generan dibujarRadar y formularioRadar (cuántos puntos, a qué distancia del centro,
+// qué rótulos, cuántos campos). Cómo se ve en pantalla (colores, tamaños, si los rótulos se pisan) se verifica en Construction III, en un navegador.
+// La tabla de índices de abajo se transcribe de Elaboration I a propósito, sin derivarla de la aplicación, para comprobar a la aplicación contra ella.
+const COMPONENTES_RADAR = [
+  ['Movilización 1', 0, 4], ['Movilización 2', 4, 4], ['Movilización 3', 8, 4],
+  ['Traducción 1', 12, 5], ['Traducción 2', 17, 4], ['Traducción 3', 21, 3],
+  ['Alineamiento 1', 24, 4], ['Alineamiento 2', 28, 4],
+  ['Motivación 1', 32, 4], ['Motivación 2', 36, 4], ['Motivación 3', 40, 4],
+  ['Gestión 1', 44, 4], ['Gestión 2', 48, 4], ['Gestión 3', 52, 4]
+];
+const NOMBRES_RADAR = COMPONENTES_RADAR.map((c) => c[0]);
+// Como el formulario: las calificaciones se guardan como texto. "asignaciones" = { 'Movilización 1': [0, 1, 2, 3], ... }; el resto queda en null.
+function datosRadar(asignaciones) {
+  const calificaciones = new Array(56).fill(null);
+  Object.entries(asignaciones || {}).forEach(([nombre, valores]) => {
+    const componente = COMPONENTES_RADAR.find((c) => c[0] === nombre);
+    if (!componente || valores.length > componente[2]) throw new Error('componente de prueba inválido: ' + nombre);
+    valores.forEach((v, k) => { calificaciones[componente[1] + k] = v === null ? null : String(v); });
+  });
+  return { calificaciones };
+}
+const casoRE1 = () => ({ 'Movilización 1': [0, 1, 2, 3], 'Traducción 1': [0, 0, 5, 5, 5], 'Traducción 3': [0, 0, 0], 'Gestión 3': [5, 5, 5, 5] });
+const evaluarRadar = (datos) => { fijarEstado({ datos: { RADAR: datos } }); return evaluarMatriz('RADAR'); };
+const estadosRadar = (resultado) => resultado.map((c) => c.estado);
+const completosRadar = (resultado) => resultado.map((c, k) => (c.estado === 'completo' ? k : -1)).filter((k) => k >= 0);
+
+// DOM simulado mínimo (solo lo que usan svg(), texto(), el() y tabla()): sin navegador, y solo para inspeccionar la estructura generada.
+function nodoSimulado(etiqueta) {
+  return {
+    etiqueta, atributos: {}, hijos: [], className: '', textContent: '',
+    setAttribute(clave, valor) { this.atributos[clave] = String(valor); },
+    append(...nodos) { this.hijos.push(...nodos); },
+    replaceChildren(...nodos) { this.hijos = nodos; }
+  };
+}
+const recorrerNodos = (nodo, funcion) => { if (typeof nodo === 'string') return; funcion(nodo); nodo.hijos.forEach((h) => recorrerNodos(h, funcion)); };
+const aplanarNodos = (raiz) => { const lista = []; recorrerNodos(raiz, (n) => lista.push(n)); return lista; };
+const textoDeNodo = (nodo) => (typeof nodo === 'string' ? nodo : (nodo.textContent || '') + ' ' + nodo.hijos.map(textoDeNodo).join(' '));
+function cargarAppConDocumento() {
+  const contenedor = nodoSimulado('div');
+  const contexto = vm.createContext({ console });
+  const interfaz = vm.runInContext(scriptPorId('app') + '\n;({ MotorGraficos, formularioRadar, resultadosRadar });', contexto);
+  // document se asigna después de cargar el script: así la rutina de arranque (que solo corre si document existe al cargarse) no se ejecuta.
+  contexto.document = { createElementNS: (espacio, etiqueta) => nodoSimulado(etiqueta), createElement: nodoSimulado, querySelector: () => contenedor };
+  return Object.assign({ contenedor }, interfaz);
+}
+const appDOM = cargarAppConDocumento();
+function trazadoRadar(resultado) {
+  appDOM.MotorGraficos.dibujarRadar(resultado);
+  const nodos = aplanarNodos(appDOM.contenedor.hijos[0]);
+  const num = (n, clave) => Number(n.atributos[clave]);
+  const anillo = nodos.find((n) => n.etiqueta === 'circle' && n.atributos.class === 'g-eje');
+  const centro = { x: num(anillo, 'cx'), y: num(anillo, 'cy') };
+  const radio = num(anillo, 'r');
+  return {
+    rayos: nodos.filter((n) => n.etiqueta === 'line' && n.atributos.class === 'g-rejilla').map((l) => ({ dx: num(l, 'x2') - centro.x, dy: num(l, 'y2') - centro.y })),
+    puntos: nodos.filter((n) => n.etiqueta === 'circle' && n.atributos.class === 'punto-radar')
+      .map((p) => ({ dx: num(p, 'cx') - centro.x, dy: num(p, 'cy') - centro.y, fraccion: Math.hypot(num(p, 'cx') - centro.x, num(p, 'cy') - centro.y) / radio })),
+    rotulos: nodos.filter((n) => n.etiqueta === 'text').map((t) => t.hijos[0]).filter((t) => NOMBRES_RADAR.includes(t))
+  };
+}
+
+prueba('RE.1', 'RADAR: cuatro componentes completos y diez vacíos (promedio con divisores 4, 5, 3 y 4)', (esperar, igual) => {
+  const e = evaluarRadar(datosRadar(casoRE1()));
+  igual(e.estado, 'ok', 'estado');
+  igual(e.errores, [], 'sin errores');
+  igual(e.resultado.length, 14, 'un resultado por componente');
+  igual(completosRadar(e.resultado), [0, 3, 5, 13], 'componentes completos (Movilización 1, Traducción 1, Traducción 3, Gestión 3)');
+  igual([0, 3, 5, 13].map((k) => e.resultado[k].puntaje), [1.5, 3.0, 0.0, 5.0], 'puntajes');
+  esperar(e.resultado[0].puntaje === 1.5, 'el puntaje no se redondea internamente');
+  igual(e.resultado.filter((c, k) => ![0, 3, 5, 13].includes(k)).map((c) => c.estado), new Array(10).fill('vacío'), 'los otros diez componentes están vacíos');
+  esperar(e.resultado.every((c) => c.estado === 'completo' || c.puntaje === null), 'solo los completos traen puntaje');
+  // El mismo caso, con las calificaciones como números (no como texto) y sin pasar por evaluarMatriz.
+  const directo = MotorCalculo.calcularRadar(datosRadar(casoRE1()).calificaciones.map((c) => (c === null ? null : Number(c))), []);
+  igual([0, 3, 5, 13].map((k) => directo[k].puntaje), [1.5, 3.0, 0.0, 5.0], 'calcularRadar directo');
+  // Traducción 3 en 0.00 es un componente completo en el ideal; no es lo mismo que un componente vacío.
+  igual(e.resultado[5], { estado: 'completo', puntaje: 0 }, 'Traducción 3 completo en 0.00');
+  igual(e.resultado[4], { estado: 'vacío', puntaje: null }, 'Traducción 2 vacío');
+});
+
+prueba('RE.2', 'RADAR: un componente incompleto no se calcula, ni da error, y se calcula al completarlo', (esperar, igual) => {
+  const parcial = datosRadar(Object.assign(casoRE1(), { 'Movilización 2': [1, 3] }));
+  const e = evaluarRadar(parcial);
+  igual(e.estado, 'ok', 'el módulo sigue calculando');
+  igual(e.errores, [], 'sin ningún mensaje de error');
+  igual(e.resultado[1], { estado: 'incompleto', puntaje: null }, 'Movilización 2 incompleto, sin puntaje (no 2.00)');
+  igual(completosRadar(e.resultado), [0, 3, 5, 13], 'los mismos cuatro puntos de RE.1');
+  igual(estadosRadar(e.resultado).filter((s) => s === 'vacío').length, 9, 'los otros nueve siguen vacíos');
+  esperar(Validador.validar('RADAR', parcial).valido === true, 'el Validador no rechaza un componente incompleto');
+  const completo = evaluarRadar(datosRadar(Object.assign(casoRE1(), { 'Movilización 2': [1, 3, 2, 4] })));
+  igual(completo.resultado[1], { estado: 'completo', puntaje: 2.5 }, 'Movilización 2 completo: (1 + 3 + 2 + 4) / 4');
+  igual(completosRadar(completo.resultado), [0, 1, 3, 5, 13], 'cinco puntos');
+  igual([0, 3, 5, 13].map((k) => completo.resultado[k].puntaje), [1.5, 3.0, 0.0, 5.0], 'los cuatro anteriores no cambian');
+});
+
+prueba('RE.3', 'RADAR: el módulo entero vacío (sin calificar ninguna de las 56 características)', (esperar, igual) => {
+  [datosRadar(), { calificaciones: new Array(56).fill('') }].forEach((datos, caso) => {
+    const e = evaluarRadar(datos);
+    igual(e.estado, 'vacia', 'caso ' + caso + ': estado');
+    igual(e.errores, [], 'caso ' + caso + ': sin errores');
+    esperar(e.resultado === undefined, 'caso ' + caso + ': no debía haber resultado ni gráfico');
+  });
+  const v = Validador.validar('RADAR', datosRadar());
+  esperar(v.valido === true && v.errores.length === 0, 'el Validador no marca error por falta de calificaciones: ' + JSON.stringify(v.errores));
+  igual(v.indicesInvalidos, [], 'ningún índice inválido');
+  // Lo que calcularRadar devuelve si se le pasa el módulo vacío: 14 componentes vacíos.
+  igual(estadosRadar(MotorCalculo.calcularRadar(datosRadar().calificaciones, [])), new Array(14).fill('vacío'), 'catorce componentes vacíos');
+});
+
+prueba('RE.4', 'RADAR: eje fijo de 0 a 5, sin ajustarse a los datos (distancias comprobadas en el SVG; lo visual, en Construction III)', (esperar, igual) => {
+  // Un solo componente completo, con 1.50: debe quedar al 30 % del radio (1.5 / 5), no estirarse hasta el borde por ser el único.
+  const solo = evaluarRadar(datosRadar({ 'Movilización 1': [0, 1, 2, 3] }));
+  igual(completosRadar(solo.resultado), [0], 'un solo componente completo');
+  const t = trazadoRadar(solo.resultado);
+  igual(t.puntos.length, 1, 'un solo punto');
+  igual(t.puntos[0].fraccion, 0.3, 'distancia al centro como fracción del radio');
+  // Con el caso de RE.1: 0.30, 0.60, 0.00 (centro) y 1.00 (borde).
+  const t1 = trazadoRadar(evaluarRadar(datosRadar(casoRE1())).resultado);
+  igualLista(igual, t1.puntos.map((p) => p.fraccion), [0.3, 0.6, 0, 1], 'distancias del caso RE.1');
+});
+
+prueba('RE.5', 'RADAR: catorce puntas rotuladas con "<Etapa> <posición>" y puntos solo en los componentes completos (estructura del SVG; lo visual, en Construction III)', (esperar, igual) => {
+  const resultado = evaluarRadar(datosRadar(casoRE1())).resultado;
+  const t = trazadoRadar(resultado);
+  igual(t.rayos.length, 14, 'catorce puntas');
+  igual(t.rotulos, NOMBRES_RADAR, 'rótulos en el orden de las puntas 1 a 14');
+  igual(t.puntos.length, 4, 'cuatro puntos, aunque las 14 puntas estén rotuladas');
+  // Cada punto cae sobre la punta de su componente: Movilización 1, Traducción 1, Traducción 3 y Gestión 3.
+  const sobreLaPunta = (p, k) => Math.abs(p.dx * t.rayos[k].dy - p.dy * t.rayos[k].dx) < 1e-6 * (1 + Math.hypot(t.rayos[k].dx, t.rayos[k].dy));
+  [[0, 0], [1, 3], [3, 13]].forEach(([i, k]) => esperar(sobreLaPunta(t.puntos[i], k), 'el punto ' + (i + 1) + ' debía caer sobre la punta ' + (k + 1) + ' (' + NOMBRES_RADAR[k] + ')'));
+  esperar(Math.hypot(t.puntos[2].dx, t.puntos[2].dy) < 1e-9, 'Traducción 3 (0.00) debía caer en el centro');
+  // Un componente que no está completo no recibe punto.
+  const conIncompleto = trazadoRadar(evaluarRadar(datosRadar(Object.assign(casoRE1(), { 'Movilización 2': [1, 3] }))).resultado);
+  igual(conIncompleto.puntos.length, 4, 'un componente incompleto no recibe punto');
+  const conInvalido = MotorCalculo.calcularRadar(datosRadar(casoRE1()).calificaciones, [0]);
+  igual(trazadoRadar(conInvalido).puntos.length, 3, 'un componente inválido no recibe punto');
+});
+
+prueba('RE.6', 'RADAR: la lectura invertida está explícita (contenido del formulario y del SVG; la redacción y el aspecto, en Construction III)', (esperar) => {
+  const formulario = appDOM.formularioRadar(datosRadar()).map(textoDeNodo).join(' ');
+  ['Estoy completamente de acuerdo', 'Estoy bastante de acuerdo', 'Estoy algo de acuerdo', 'No estoy muy de acuerdo', 'No estoy casi nada de acuerdo', 'Estoy en completo desacuerdo']
+    .forEach((nivel, n) => esperar(formulario.includes(n + ': ' + nivel), 'el formulario debía mostrar el nivel ' + n + ' de la escala'));
+  esperar(/invertida/i.test(formulario) && /0 es el mejor/i.test(formulario) && /5 el peor/i.test(formulario), 'el formulario debía avisar que 0 es el mejor valor y 5 el peor');
+  appDOM.MotorGraficos.dibujarRadar(evaluarRadar(datosRadar(casoRE1())).resultado);
+  const grafico = textoDeNodo(appDOM.contenedor.hijos[0]);
+  esperar(/invertida/i.test(grafico) && /se aleja del centro/i.test(grafico) && /problema/i.test(grafico), 'el gráfico debía avisar que un punto que se aleja del centro señala un problema');
+});
+
+prueba('RE.7', 'RADAR: la estructura es fija (56 campos, 14 componentes, 5 etapas, sin botones; lo visual, en Construction III)', (esperar, igual) => {
+  const nodos = appDOM.formularioRadar(datosRadar()).flatMap(aplanarNodos);
+  const campos = nodos.filter((n) => n.etiqueta === 'input').map((n) => n.atributos['data-campo']);
+  igual(campos, Array.from({ length: 56 }, (_, i) => 'calificaciones.' + i), 'los 56 campos, en orden, con índice plano');
+  igual(nodos.filter((n) => n.etiqueta === 'button' || n.atributos['data-accion'] !== undefined).length, 0, 'ningún botón ni acción para agregar o quitar');
+  igual(nodos.filter((n) => n.etiqueta === 'select').length, 0, 'ningún selector que altere la estructura');
+  const etapas = nodos.filter((n) => (n.className || '').includes('etapa-radar'));
+  igual(etapas.map((e) => aplanarNodos(e).filter((n) => n.className === 'componente-radar').length), [3, 3, 2, 3, 3], 'componentes por etapa');
+  const componentes = nodos.filter((n) => n.className === 'componente-radar');
+  igual(componentes.map((c) => aplanarNodos(c).filter((n) => n.etiqueta === 'input').length), [4, 4, 4, 5, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4], 'características por componente');
+  igual(componentes.map((c) => c.hijos[0].textContent), NOMBRES_RADAR, 'nombre de cada componente');
+  const tablaResultados = appDOM.resultadosRadar(MotorCalculo.calcularRadar(datosRadar().calificaciones, [])).flatMap(aplanarNodos);
+  igual(tablaResultados.filter((n) => n.etiqueta === 'tr').length, 15, 'la tabla de resultados tiene el encabezado y 14 filas');
+});
+
+prueba('RE.8', 'RADAR: los dos componentes de Alineamiento (mismo título en el documento) son independientes', (esperar, igual) => {
+  const soloSegundo = evaluarRadar(datosRadar({ 'Alineamiento 2': [3, 3, 3, 3] }));
+  igual(soloSegundo.resultado[7], { estado: 'completo', puntaje: 3 }, 'Alineamiento 2 completo en 3.00 (punta 8)');
+  igual(soloSegundo.resultado[6], { estado: 'vacío', puntaje: null }, 'Alineamiento 1 vacío (punta 7)');
+  igual(completosRadar(soloSegundo.resultado), [7], 'solo la punta 8 tiene punto');
+  const ambos = evaluarRadar(datosRadar({ 'Alineamiento 2': [3, 3, 3, 3], 'Alineamiento 1': [1, 1, 1, 1] }));
+  igual(ambos.resultado[6], { estado: 'completo', puntaje: 1 }, 'Alineamiento 1 completo en 1.00');
+  igual(ambos.resultado[7], { estado: 'completo', puntaje: 3 }, 'Alineamiento 2 sigue en 3.00');
+});
+
+prueba('RE.9', 'RADAR: editar o borrar una calificación recalcula o devuelve el componente a incompleto', (esperar, igual) => {
+  const datos = datosRadar(casoRE1());
+  datos.calificaciones[3] = '5';
+  const editado = evaluarRadar(datos);
+  igual(editado.resultado[0], { estado: 'completo', puntaje: 2 }, 'Movilización 1: (0 + 1 + 2 + 5) / 4');
+  igual([3, 5, 13].map((k) => editado.resultado[k].puntaje), [3.0, 0.0, 5.0], 'los otros tres puntos no cambian');
+  [null, ''].forEach((sinValor) => {
+    const borrado = datosRadar(casoRE1());
+    borrado.calificaciones[0] = sinValor;
+    const e = evaluarRadar(borrado);
+    const caso = 'borrar con ' + JSON.stringify(sinValor);
+    igual(e.estado, 'ok', caso + ': el módulo sigue calculando');
+    igual(e.errores, [], caso + ': sin errores');
+    igual(e.resultado[0], { estado: 'incompleto', puntaje: null }, caso + ': Movilización 1 incompleto');
+    igual(completosRadar(e.resultado), [3, 5, 13], caso + ': los otros tres puntos');
+    igual(borrado.calificaciones.slice(1, 4), ['1', '2', '3'], caso + ': las otras tres calificaciones se conservan');
+  });
+});
+
+prueba('RE.10', 'RADAR: calificación fuera de rango (el componente queda inválido y los demás no se ven afectados)', (esperar, igual) => {
+  [6, -1].forEach((valor) => {
+    const datos = datosRadar(casoRE1());
+    datos.calificaciones[3] = String(valor);
+    const v = Validador.validar('RADAR', datos);
+    const caso = 'valor ' + valor;
+    esperar(v.valido === false, caso + ': el Validador debía rechazar la calificación');
+    igual(v.indicesInvalidos, [3], caso + ': índice plano de la característica fuera de rango');
+    igual(v.errores.length, 1, caso + ': un solo mensaje, por característica');
+    const e = evaluarRadar(datos);
+    igual(e.estado, 'ok', caso + ': el módulo no se bloquea');
+    esperar(e.errores.length === 1 && e.errores[0].startsWith('Movilización 1, característica 4:') && e.errores[0].includes('0') && e.errores[0].includes('5'),
+      caso + ': el error debía nombrar el componente y la posición e indicar el rango de 0 a 5: ' + JSON.stringify(e.errores));
+    igual(e.resultado[0], { estado: 'inválido', puntaje: null }, caso + ': Movilización 1 inválido, sin puntaje');
+    igual([3, 5, 13].map((k) => e.resultado[k].puntaje), [3.0, 0.0, 5.0], caso + ': los otros tres componentes siguen igual');
+    igual(datos.calificaciones[3], String(valor), caso + ': el valor escrito se conserva');
+  });
+  // Un valor fuera de rango con el resto del componente sin calificar sigue siendo inválido (no incompleto).
+  igual(evaluarRadar(datosRadar({ 'Movilización 1': [9] })).resultado[0].estado, 'inválido', 'inválido aunque el resto del componente esté sin calificar');
+  // Un valor no numérico es una entrada inválida, no una celda vacía.
+  const texto = datosRadar(casoRE1());
+  texto.calificaciones[3] = 'abc';
+  igual(evaluarRadar(texto).resultado[0].estado, 'inválido', 'texto no numérico');
+  // Los dos extremos de la escala son válidos.
+  esperar(Validador.validar('RADAR', datosRadar(casoRE1())).valido === true, '0 y 5 son calificaciones válidas');
+});
+
+prueba('RE.11', 'RADAR: los datos siguen tras recargar (persistencia y recálculo)', (esperar, igual) => {
+  const almacen = {};
+  const localStorageSimulado = {
+    getItem: (k) => (k in almacen ? almacen[k] : null), setItem: (k, v) => { almacen[k] = String(v); }, removeItem: (k) => { delete almacen[k]; }
+  };
+  const app2 = cargarApp({ localStorage: localStorageSimulado });
+  const p = app2.Persistencia;
+  const inicial = p.cargar();
+  igual(inicial.datos.RADAR, { calificaciones: new Array(56).fill(null) }, 'RADAR con 56 null en un estado nuevo');
+  const datos = datosRadar(Object.assign(casoRE1(), { 'Movilización 2': [1, 3] }));
+  inicial.matrizActiva = 'RADAR';
+  inicial.datos.RADAR = datos;
+  esperar(p.guardar(inicial) === true, 'guardar debía devolver true');
+  // "Recargar": otra instancia de la aplicación lee lo guardado.
+  const app3 = cargarApp({ localStorage: localStorageSimulado });
+  const recuperado = app3.Persistencia.cargar();
+  igual(recuperado.matrizActiva, 'RADAR', 'matriz activa recuperada');
+  igual(recuperado.datos.RADAR, datos, 'las 56 calificaciones recuperadas, incluidas las dos del componente incompleto');
+  app3.fijarEstado(recuperado);
+  const e = app3.evaluarMatriz('RADAR');
+  igual(e.estado, 'ok', 'estado tras recargar');
+  igual(completosRadar(e.resultado), [0, 3, 5, 13], 'los mismos cuatro puntos de RE.1');
+  igual([0, 3, 5, 13].map((k) => e.resultado[k].puntaje), [1.5, 3.0, 0.0, 5.0], 'los mismos puntajes de RE.1');
+  igual(e.resultado[1], { estado: 'incompleto', puntaje: null }, 'Movilización 2 sigue incompleto, sin punto');
+
+  // Un estado guardado antes del módulo no trae datos.RADAR: se completa con 56 null y los demás datos sobreviven, sin cambiar la versión.
+  const viejo = app3.Persistencia.cargar();
+  viejo.datos.BCG.divisiones[0].ingresos = '500';
+  delete viejo.datos.RADAR;
+  almacen['mtx.estado'] = JSON.stringify(viejo);
+  const migrado = app3.Persistencia.cargar();
+  igual(migrado.datos.RADAR, { calificaciones: new Array(56).fill(null) }, 'estado anterior sin RADAR: 56 null');
+  igual(migrado.datos.BCG.divisiones[0].ingresos, '500', 'estado anterior sin RADAR: los demás datos se conservan');
+  igual(migrado.version, 1, 'la versión del formato guardado no cambia');
+  // Un RADAR dañado (cantidad distinta de 56) también se reemplaza por 56 null.
+  const danado = app3.Persistencia.cargar();
+  danado.datos.RADAR = { calificaciones: ['1', '2'] };
+  almacen['mtx.estado'] = JSON.stringify(danado);
+  igual(app3.Persistencia.cargar().datos.RADAR, { calificaciones: new Array(56).fill(null) }, 'RADAR dañado: 56 null');
+});
+
 // ---------------------------------------------------------------------------
 // Comprobaciones adicionales (no son pruebas de Elaboration I)
 prueba('X.1', 'Firmas: los seis objetos tienen exactamente los métodos del diagrama de clases de Elaboration II', (esperar, igual) => {
@@ -491,6 +753,39 @@ prueba('X.6', 'Exportador AE: hojas "Datos" (matriz completa) y "Resultados" (un
   const corteY = hojaResultados.find((f) => f[0] === 'Corte Y');
   const corteX = hojaResultados.find((f) => f[0] === 'Corte X');
   esperar(corteY && corteY[1] === 4 && corteX && corteX[1] === 4, 'las filas finales debían traer Corte Y = 4 y Corte X = 4');
+});
+
+// Exportador de RADAR (decisiones F y G de Construction II del Módulo 3): "Datos" con las 56 calificaciones y "Resultados" con los 14 componentes
+// y su estado real, y se exporta aunque haya componentes incompletos, vacíos o inválidos.
+prueba('X.7', 'Exportador RADAR: hojas "Datos" (56 filas) y "Resultados" (14 filas con el estado real, inválido incluido)', (esperar, igual) => {
+  const contexto = vm.createContext({ console });
+  vm.runInContext(scriptPorId('sheetjs'), contexto);
+  let capturado = null;
+  contexto.XLSX.writeFile = (libro, nombre) => { capturado = { libro, nombre }; };
+  const appConXLSX = cargarApp({ XLSX: contexto.XLSX });
+  // Movilización 1 inválido (un 6), Movilización 2 incompleto, Traducción 1 y Gestión 3 completos, el resto vacío.
+  const datos = datosRadar({ 'Movilización 1': [0, 1, 2, 6], 'Movilización 2': [1, 3], 'Traducción 1': [0, 0, 5, 5, 5], 'Gestión 3': [5, 5, 5, 5] });
+  const e = evaluarRadar(datos);
+  igual(e.estado, 'ok', 'la exportación no se bloquea por componentes incompletos o inválidos');
+  igual(appConXLSX.Exportador.exportarXLSX('RADAR', e.datos, e.resultado), 'Mtx-RADAR.xlsx', 'nombre del archivo');
+  esperar(capturado !== null && capturado.nombre === 'Mtx-RADAR.xlsx', 'debía llamar a XLSX.writeFile con Mtx-RADAR.xlsx');
+  igual(capturado.libro.SheetNames, ['Datos', 'Resultados'], 'hojas');
+  const hojaDatos = contexto.XLSX.utils.sheet_to_json(capturado.libro.Sheets.Datos, { header: 1 });
+  const hojaResultados = contexto.XLSX.utils.sheet_to_json(capturado.libro.Sheets.Resultados, { header: 1 });
+  igual(hojaDatos[0], ['Etapa', 'Componente', 'Característica', 'Calificación'], 'encabezado de Datos');
+  igual(hojaDatos.length, 57, 'filas de Datos (encabezado + 56 características)');
+  igual(hojaDatos[1], ['Movilización', 'Movilización 1', 'Característica 1', 0], 'primera fila de Datos');
+  igual(hojaDatos[4][3], 6, 'el valor fuera de rango se exporta tal cual');
+  igual(hojaDatos[7][3], undefined, 'una característica sin calificar queda vacía');
+  igual(hojaDatos[56], ['Gestión', 'Gestión 3', 'Característica 4', 5], 'última fila de Datos');
+  igual(hojaResultados[0], ['Etapa', 'Componente', 'Estado', 'Puntaje'], 'encabezado de Resultados');
+  igual(hojaResultados.length, 15, 'filas de Resultados (encabezado + 14 componentes)');
+  igual(hojaResultados[1].slice(0, 3), ['Movilización', 'Movilización 1', 'Inválido'], 'Movilización 1 inválido');
+  igual(hojaResultados[2].slice(0, 3), ['Movilización', 'Movilización 2', 'Incompleto'], 'Movilización 2 incompleto');
+  igual(hojaResultados[3].slice(0, 3), ['Movilización', 'Movilización 3', 'Vacío'], 'Movilización 3 vacío');
+  igual(hojaResultados[4], ['Traducción', 'Traducción 1', 'Completo', 3], 'Traducción 1 completo con su puntaje');
+  igual(hojaResultados[14], ['Gestión', 'Gestión 3', 'Completo', 5], 'Gestión 3 completo con su puntaje');
+  igual(hojaResultados.slice(1).map((f) => f[3]).filter((p) => p !== undefined).length, 2, 'solo los componentes completos traen puntaje');
 });
 
 // Persistencia con un localStorage simulado.
