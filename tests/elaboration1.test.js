@@ -408,7 +408,7 @@ const textoDeNodo = (nodo) => (typeof nodo === 'string' ? nodo : (nodo.textConte
 function cargarAppConDocumento() {
   const contenedor = nodoSimulado('div');
   const contexto = vm.createContext({ console });
-  const interfaz = vm.runInContext(scriptPorId('app') + '\n;({ MotorGraficos, formularioRadar, resultadosRadar });', contexto);
+  const interfaz = vm.runInContext(scriptPorId('app') + '\n;({ MotorGraficos, formularioRadar, resultadosRadar, ESTRUCTURA_RADAR });', contexto);
   // document se asigna después de cargar el script: así la rutina de arranque (que solo corre si document existe al cargarse) no se ejecuta.
   contexto.document = { createElementNS: (espacio, etiqueta) => nodoSimulado(etiqueta), createElement: nodoSimulado, querySelector: () => contenedor };
   return Object.assign({ contenedor }, interfaz);
@@ -525,7 +525,29 @@ prueba('RE.7', 'RADAR: la estructura es fija (56 campos, 14 componentes, 5 etapa
   igual(etapas.map((e) => aplanarNodos(e).filter((n) => n.className === 'componente-radar').length), [3, 3, 2, 3, 3], 'componentes por etapa');
   const componentes = nodos.filter((n) => n.className === 'componente-radar');
   igual(componentes.map((c) => aplanarNodos(c).filter((n) => n.etiqueta === 'input').length), [4, 4, 4, 5, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4], 'características por componente');
-  igual(componentes.map((c) => c.hijos[0].textContent), NOMBRES_RADAR, 'nombre de cada componente');
+  // El encabezado de cada componente es "<nombre>: <título del profesor>"; la primera columna de cada tabla es "Afirmación" y cada fila "<n>. <texto>".
+  const encabezados = componentes.map((c) => c.hijos[0].textContent);
+  igual(encabezados.map((h) => h.slice(0, h.indexOf(':'))), NOMBRES_RADAR, 'nombre de cada componente al inicio del encabezado');
+  esperar(encabezados.every((h) => h.slice(h.indexOf(':') + 1).trim().length > 0), 'los 14 componentes debían mostrar su título');
+  igual(encabezados[0], 'Movilización 1: LA VISION, MISION Y ESTRATEGIA ESTÁN CLARAMENTE DEFINIDAS', 'encabezado de Movilización 1');
+  igual(encabezados[13], 'Gestión 3: LA EMPRESA REALIZA UN SEGUIMIENTO SISTEMÁTICO DE LA GESTION ESTRATÉGICA', 'encabezado de Gestión 3');
+  // Los dos componentes de Alineamiento comparten título en el documento del profesor ([VERIFICAR] de la Inception): aquí solo se comprueba que el
+  // formulario los muestre distinguidos por su nombre.
+  igual(encabezados[6].slice(encabezados[6].indexOf(':')), encabezados[7].slice(encabezados[7].indexOf(':')), 'Alineamiento 1 y 2 repiten el título del Excel');
+  esperar(encabezados[6] !== encabezados[7], 'aun así sus encabezados debían diferir por el nombre');
+  igual(componentes.map((c) => aplanarNodos(c).filter((n) => n.etiqueta === 'th').map((th) => th.textContent)), new Array(14).fill(['Afirmación', 'Calificación (0 a 5)']), 'encabezados de columna de cada tabla');
+  const filasAfirmaciones = componentes.map((c) => aplanarNodos(c).filter((n) => n.etiqueta === 'tbody')[0].hijos.map((tr) => tr.hijos[0].hijos[0]));
+  igual(filasAfirmaciones.map((f) => f.length), [4, 4, 4, 5, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4], 'afirmaciones mostradas por componente');
+  igual(filasAfirmaciones.flat().length, 56, 'las 56 afirmaciones están en el formulario');
+  esperar(filasAfirmaciones.every((filas) => filas.every((texto, k) => texto.startsWith((k + 1) + '. ') && texto.length > 4)), 'cada fila debía empezar con su número dentro del componente y traer el texto');
+  const estructura = appDOM.ESTRUCTURA_RADAR;
+  igual(estructura.map((c) => c.afirmaciones.length), estructura.map((c) => c.caracteristicas), 'afirmaciones.length coincide con caracteristicas en los 14 componentes');
+  igual(estructura.map((c) => c.afirmaciones.length), [4, 4, 4, 5, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4], 'cantidad de afirmaciones por componente');
+  // Texto exacto del profesor, transcrito sin corregir.
+  igual(filasAfirmaciones[0][0], '1. La Estrategia está definida y formalizada por escrito', 'primera afirmación de Movilización 1');
+  igual(filasAfirmaciones[3][4], '5. La Empresa tiene definidos el despliegue de sus objetivos a los niveles inferiores de la organizacion', 'quinta afirmación de Traducción 1');
+  igual(filasAfirmaciones[7][0], '1. Los Gerentes programan reuniones periodicas para evaluar la información necesaria con sus unidades de soporte', 'primera afirmación de Alineamiento 2');
+  igual(filasAfirmaciones[13][3], '4. La empresa tiene una reunión anual de redefinición del la Estrategia', 'cuarta afirmación de Gestión 3 (con la errata del Excel)');
   const tablaResultados = appDOM.resultadosRadar(MotorCalculo.calcularRadar(datosRadar().calificaciones, [])).flatMap(aplanarNodos);
   igual(tablaResultados.filter((n) => n.etiqueta === 'tr').length, 15, 'la tabla de resultados tiene el encabezado y 14 filas');
 });

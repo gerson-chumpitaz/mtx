@@ -68,6 +68,8 @@
     .componente-radar { margin: 0.5rem 0 0.75rem 0.75rem; }
     .componente-radar h4 { margin: 0.5rem 0 0.1rem; font-size: 0.95rem; }
     .componente-radar input[type="text"] { width: 3rem; text-align: center; }
+    .componente-radar table { width: 100%; }
+    .componente-radar td:last-child { width: 1%; white-space: nowrap; }
     .punto-radar { fill: #c0392b; stroke: #fff; stroke-width: 2; }
   </style>
 </head>
@@ -222,12 +224,105 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       { nombre: 'Motivación', descripcion: 'hacer de la estrategia el trabajo de todos', caracteristicas: [4, 4, 4] },
       { nombre: 'Gestión', descripcion: 'la estrategia como proceso continuo', caracteristicas: [4, 4, 4] }
     ];
+    // RADAR: texto fijo del profesor (hoja "radar" de "RADAR ESTRATEGICO (1).xls"), un elemento por componente en el orden de ESTRUCTURA_RADAR.
+    // Transcripción fiel, normalizada solo de forma mecánica (se quitaron las viñetas iniciales y se colapsaron los espacios repetidos).
+    // NO se corrige ninguna errata, tilde ni palabra: el texto es del profesor y cualquier cambio se decide con él. Se conservan incluso los
+    // defectos visibles. Los dos componentes de Alineamiento tienen el mismo título a propósito, y la característica 4 de Gestión 1 es idéntica
+    // a la 4 de Motivación 3 (ambos [VERIFICAR] para el profesor: ver Construction II del Módulo 3).
+    const TEXTOS_RADAR = [
+      { titulo: "LA VISION, MISION Y ESTRATEGIA ESTÁN CLARAMENTE DEFINIDAS", afirmaciones: [
+          "La Estrategia está definida y formalizada por escrito",
+          "Existe alto conocimiento de la Misión y Visión por parte del Empresario y de los niveles Ejecutivos",
+          "Existe decidida intención por parte del Empresario y de la Alta Gerencia de liderar la estrategia",
+          "Existe el convencimiento en el Empresario y en la Gerencia que la Gestión Estratégica es su misión principal",
+      ] },
+      { titulo: "LOS EJECUTIVOS LIDERAN EL CAMBIO ESTRATEGICO Y CREAN EQUIPO LIDER DEL PROYECTO", afirmaciones: [
+          "Existe el convencimiento por el Empresario de la importancia de liderar el proceso de cambio/adaptación",
+          "Existe un lider de proyecto de Gestión estratégica conocido, aceptado y secundado por todos",
+          "El lider ha configurado un equipo de proyecto compacto y equilibrado para el paso a Gestión estratégica",
+          "Están bien delimitados los 4 estadios de la GE: Financiero, de Mercado, de Procesos y de Cultura de Empresa",
+      ] },
+      { titulo: "LOS EJECUTIVOS COMUNICAN EL SENTIDO DE URGENCIA", afirmaciones: [
+          "El Empresario tiene bien asumida la urgencia y la necesidad de adaptarse continuamente al cambio",
+          "La Gerencia y los Ejecutivos aceptan el desafío del cambio permanente y lo asumen como un reto profesional",
+          "La Propiedad y la Alta Gerencia asumen su rol de capacitadores hacia el resto de la organización",
+          "La Alta Gerencia asume la tarea de concienciar a toda la organización de la importancia y la urgencia del cambio",
+      ] },
+      { titulo: "LA ESTRATEGIA ESTA EXPLICITADA A TRAVES DE UN MAPA ESTRATEGICO COMO PARTE DEL PROCESO DE PLANEAMIENTO: LOS OBJETIVOS ESTRATÉGICOS", afirmaciones: [
+          "La Empresa tiene definidas las áreas de trabajo",
+          "La Empresa tiene definido y alineados los objetivos estrategicos de la empresa",
+          "La Empresa tiene definidos las grandes dimensiones o campos de actuacion de la empresa (perspectivas)",
+          "La Empresa tiene definidos el mapa estrategico organizacional",
+          "La Empresa tiene definidos el despliegue de sus objetivos a los niveles inferiores de la organizacion",
+      ] },
+      { titulo: "LOS INDICADORES SON UTILIZADOS PARA COMUNICAR LA ESTRATEGIA Y SON BALANCEADOS EN LAS PERSPECTIVAS", afirmaciones: [
+          "Los inductores descriptores estan identificados en funcion a los objetivos Estratégicos",
+          "Los indicadores inductores están claramente identificados",
+          "La empresa tiene delimitada las actividades de su cadena de valor",
+          "Los indicadores descriptores de procesos están identificados",
+      ] },
+      { titulo: "LAS METAS SON ESTABLECIDAS PARA CADA INDICADOR Y LAS INICIATIVAS ESTRATEGICAS SON CLARAMENTE DEFINIDAS", afirmaciones: [
+          "Las iniciativas estrategicas , actividades y tareas a realizar están determinados",
+          "La metas a alcanzar estan claramente delimitadas",
+          "La empresa tiene cuantificados los indicadores descriptores de resultados alcanzados",
+      ] },
+      { titulo: "LA ESTRATEGIA CORPORATIVA ES UTILIZADA PARA GUIAR LAS ESTRATEGIAS DE LAS UNIDADES DE NEGOCIO", afirmaciones: [
+          "La Empresa tiene definidos los mapas estrategicos de niveles inferiores",
+          "Los miembros de su gerencia conocen y utilizan la información necesaria",
+          "Los miembros de l os EE-UN participan en la formulacion de la estrategia",
+          "Mediante reuniones periódicas, existe un elevado nivel de coordinación dentro de sus gerencias",
+      ] },
+      { titulo: "LA ESTRATEGIA CORPORATIVA ES UTILIZADA PARA GUIAR LAS ESTRATEGIAS DE LAS UNIDADES DE NEGOCIO", afirmaciones: [
+          "Los Gerentes programan reuniones periodicas para evaluar la información necesaria con sus unidades de soporte",
+          "Los miembros de las areas/ secciones conocen y utilizan la información necesaria",
+          "Los miembros del equipo de cada area/ seccion participan en la confección / revisión de su informacion",
+          "Mediante reuniones periódicas, existe un elevado nivel de coordinación dentro de cada area/seccion",
+      ] },
+      { titulo: "LA COMUNICACIÓN ES ABIERTA Y TRANSPARENTE, PARA QUE SEA FLUIDA", afirmaciones: [
+          "La comunicación está establecida regularmente",
+          "La empresa tiene y usa: Murales, Reuniones informativas, Website, Mail, Facebook, Twitter, Blogs, etc",
+          "Existen mecanismos de comunicación para canalizar inquietudes, ideas, sugerencias, etc",
+          "La Gerencia tiene una política de puertas abiertas para quejas y sugerencias",
+      ] },
+      { titulo: "LAS METAS INDIVIDUALES ESTÁN ESTABLECIDAS Y DETERMINADAS", afirmaciones: [
+          "Existe una definición de Metas mensuales, trimestrales y anuales para cada uno",
+          "EL superior de cada persona tiene adoptada una posición de ayuda al logro de los objetivos de su equipo",
+          "Los objetivos de cada uno están definidos en función de los resultados del equipo",
+          "Las metas individuales se determinan por consenso entre el responsable y el colaborador",
+      ] },
+      { titulo: "MEDIANTE LA REMUNERACIÓN VARIABLE, LA EMPRESA ASOCIA TALENTOS", afirmaciones: [
+          "Se celebran reuniones de creatividad con periodicidad establecidda",
+          "La empresa tiene establecida una parte de la remuneración como variable según resultados",
+          "La remuneración variable global de la empresa debe mejorar los resultados en dos años",
+          "Existe un mecanismo para premiar las inciativas y las sugerencias de los colaboradores",
+      ] },
+      { titulo: "EL PRESUPUESTO ESTÁ ESTABLECIDO Y EXISTE UN MÉTODO DE SEGUIMIENTO", afirmaciones: [
+          "Existe un presupuesto formalizado cada año antes del inicio de nuevas estrategias y/o tecnologia",
+          "El Presupuesto tiene un seguimiento / monitoreo periódico",
+          "El Presupuesto se revisa y ajusta al menos trimestralmente",
+          "Existe un mecanismo para premiar las inciativas y las sugerencias de los colaboradores",
+      ] },
+      { titulo: "LA EMPRESA TIENE SISTEMAS PARA SEGUIMIENTO DE LAS OPERACIONES", afirmaciones: [
+          "La empresa dispone de sistemas que la ayuden con sus labores (ruteo, gestión, etc)",
+          "La Empresa dispone de un elevado grado de formalización de la información de gestión y/o otras actividades",
+          "La Empresa dispone de sistemas de información para el seguiimiento de sus operaciones",
+          "El Sistema aporta información estratégica para la toma de decisiones",
+      ] },
+      { titulo: "LA EMPRESA REALIZA UN SEGUIMIENTO SISTEMÁTICO DE LA GESTION ESTRATÉGICA", afirmaciones: [
+          "La empresa tiene periódicamente establecidas reuniones de Consejo de Administración y se formalizan actas",
+          "La empresa tiene establecidas reuniones periódicas de Comité de Dirección, Departamentos, etc",
+          "La empresa tiene establecidas periódicamente reuniones para evaluar los indicadores",
+          "La empresa tiene una reunión anual de redefinición del la Estrategia",
+      ] },
+    ];
     const ESTRUCTURA_RADAR = (() => {
       const componentes = [];
       ETAPAS_RADAR.forEach((etapa) => etapa.caracteristicas.forEach((cantidad, k) => {
         const desde = componentes.length > 0 ? componentes[componentes.length - 1].hasta + 1 : 0;
+        const texto = TEXTOS_RADAR[componentes.length];
         componentes.push({
           etapa: etapa.nombre, posicion: k + 1, nombre: etapa.nombre + ' ' + (k + 1),
+          titulo: texto.titulo, afirmaciones: texto.afirmaciones,
           caracteristicas: cantidad, desde, hasta: desde + cantidad - 1
         });
       }));
@@ -1455,8 +1550,8 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     }
 
     // RADAR: las 56 calificaciones agrupadas por componente y, estas, por etapa. Cada una usa data-campo "calificaciones.i" (índice plano
-    // 0 a 55). La estructura es fija: no hay botones para agregar ni quitar nada. Las afirmaciones del profesor no están en este
-    // repositorio: cada característica se rotula por su posición dentro del componente.
+    // 0 a 55). La estructura es fija: no hay botones para agregar ni quitar nada. El título de cada componente y el texto de cada
+    // afirmación son los del profesor (TEXTOS_RADAR); el número que precede a cada afirmación es el que usan los mensajes de error.
     function formularioRadar(datos) {
       const nodos = [
         el('p', { clase: 'ayuda', texto: 'Radar Estratégico (El Radar de la Posición Estratégica, de Kaplan y Norton). Califique de 0 a 5 su nivel de acuerdo con cada una de las 56 afirmaciones, agrupadas en 14 componentes y 5 etapas. El puntaje de cada componente y el radar salen solos cuando todas las características de ese componente están calificadas.' }),
@@ -1467,10 +1562,10 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         const componentes = ESTRUCTURA_RADAR.filter((c) => c.etapa === etapa.nombre).map((c) => {
           const filas = [];
           for (let i = c.desde; i <= c.hasta; i++) {
-            filas.push(['Característica ' + (i - c.desde + 1),
+            filas.push([(i - c.desde + 1) + '. ' + c.afirmaciones[i - c.desde],
               entrada('calificaciones.' + i, datos.calificaciones[i], c.nombre + ', característica ' + (i - c.desde + 1))]);
           }
-          return el('div', { clase: 'componente-radar' }, [el('h4', { texto: c.nombre }), tabla(['Característica', 'Calificación (0 a 5)'], filas)]);
+          return el('div', { clase: 'componente-radar' }, [el('h4', { texto: c.nombre + ': ' + c.titulo }), tabla(['Afirmación', 'Calificación (0 a 5)'], filas)]);
         });
         nodos.push(el('div', { clase: 'grupo etapa-radar' }, [el('h3', { texto: etapa.nombre + ': ' + etapa.descripcion })].concat(componentes)));
       });
