@@ -687,6 +687,14 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
       <div class="resultados"></div>
       <div class="grafico"></div>
     </section>
+
+    <section id="matriz-radar" class="matriz" data-matriz="RADAR" hidden>
+      <h2>RADAR</h2>
+      <div class="formulario"></div>
+      <div class="errores"></div>
+      <div class="resultados"></div>
+      <div class="grafico"></div>
+    </section>
   </main>
 
   <!-- Construction III: librería de generación de .xlsx embebida aquí, sin CDN [VERIFICAR] -->
@@ -696,6 +704,12 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
 
     // Auxiliar privada del Validador para AE (Construction II/III): aplica el mínimo de dos variables y excluye la diagonal del conteo de campos vacíos
     function erroresAE(datos, errores) {
+      // Construction II/III
+    }
+
+    // Auxiliar privada del Validador para RADAR (Construction II/III): revisa solo el rango (0 a 5, con validarRango) de las calificaciones que tengan valor
+    // y devuelve los errores por característica (índice plano 0 a 55). Una calificación sin valor (null) nunca es un error
+    function erroresRadar(datos, errores) {
       // Construction II/III
     }
 
@@ -738,6 +752,9 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
       },
       calcularAE(variables, matriz) {
         // Construction II/III
+      },
+      calcularRadar(calificaciones, errores) {
+        // Construction II/III (devuelve un arreglo de 14 posiciones { estado, puntaje }; ver "Forma de ResultadoRadar" en Construction I del Módulo 3)
       }
     };
 
@@ -756,6 +773,9 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
       },
       dibujarAE(resultado) {
         // Construction II/III
+      },
+      dibujarRadar(resultado) {
+        // Construction II/III (solo recorre el arreglo de ResultadoRadar y dibuja un punto donde estado sea "completo")
       }
     };
 
@@ -765,6 +785,7 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
       },
       cargar() {
         // Construction II/III (si el estado guardado no trae datos.AE, devolver AE vacío; sin cambio de versión del formato)
+        // Construction II/III (igual para RADAR: si el estado guardado no trae datos.RADAR, devolver RADAR con 56 null)
       },
       limpiar() {
         // Construction II/III
@@ -784,6 +805,16 @@ Esqueleto del archivo. Las firmas de los métodos son las del diagrama de clases
     }
 
     function resultadosAE(resultado) {
+      // Construction II/III
+    }
+
+    // Auxiliares privadas de la Vista para RADAR (Construction II/III). formularioRadar dibuja las 56 calificaciones agrupadas en cinco etapas
+    // (celda con data-campo "calificaciones.i", índice plano 0 a 55, sin controles para agregar ni quitar); resultadosRadar construye los puntajes por componente
+    function formularioRadar(datos) {
+      // Construction II/III
+    }
+
+    function resultadosRadar(resultado) {
       // Construction II/III
     }
 
@@ -2556,3 +2587,125 @@ Los escenarios RE-4 y RE-5 no tienen diagrama propio: siguen la misma secuencia 
 5. Estado guardado: cómo se acomodan las 56 calificaciones con sus huecos, y si el formato guardado cambia de versión. Se decide en Construction I.
 6. El punto abierto de recuperación de sesión del Módulo 1 (aviso al descartar un estado corrupto) aplica también a este módulo.
 7. Siguen abiertos los puntos de Elaboration I de este módulo: el título repetido de los dos componentes de Alineamiento, las calificaciones con decimales, y la redacción de avisos y errores junto con el aspecto del radar vacío.
+
+## Construction I — Módulo 3: Radar Estratégico
+
+Objetivo de la fase: resolver las preguntas que Elaboration II de este módulo dejó abiertas para Construction I, y dejar el esqueleto del proyecto extendido con los stubs de Radar Estratégico, sin comportamiento real. Los cuerpos de los métodos están vacíos o llevan un comentario de marcador de posición. Ninguna lógica de cálculo, validación, graficado ni renderizado se implementa en esta fase, y esta fase no toca `index.html` ni `tests/`: el esqueleto sigue viviendo dentro de este documento.
+
+### 1. Decisiones de arquitectura
+
+El stack no cambia: archivo único `index.html`, HTML, CSS y JavaScript sin framework ni backend, SVG para los gráficos, SheetJS embebido y localStorage. Se aplica tal cual a este módulo.
+
+Las preguntas abiertas se resuelven con decisiones del juez:
+
+| Pregunta abierta en Elaboration II | Decisión |
+|---|---|
+| ¿Se sigue llamando `matriz` al discriminador, con un noveno valor, o se generaliza el nombre? | Se mantiene el nombre, con un valor nuevo, `"RADAR"`. Cambiarlo tocaría los ocho usos ya existentes del campo por un beneficio solo cosmético, y el campo ya funciona como discriminador de tipo desde que incluye PEYEA (un vector) y MIE (una cuadrícula), que tampoco son matrices de influencia en sentido estricto. "Matriz" es el nombre histórico del campo, no una descripción literal de su contenido. |
+| ¿El Validador necesita un método nuevo para clasificar los estados de un componente? | No. Ningún método público nuevo. `validar('RADAR', datos)` reutiliza `validarRango` (límites 0 a 5) sobre cada una de las 56 calificaciones que tengan un valor, con una auxiliar privada, `erroresRadar`, que solo revisa el rango sobre las calificaciones presentes. Una calificación sin valor (sin calificar) nunca es un error de rango: ausencia no es invalidez. `erroresRadar` devuelve los errores por característica, no por componente. La clasificación en completo, incompleto o vacío no es del Validador: la hace `calcularRadar`. |
+| ¿Quién filtra los componentes no completos y cómo se excluye uno inválido? ¿Cuál es la forma de `ResultadoRadar`? | `calcularRadar(calificaciones, errores)` recibe las 56 calificaciones y el resultado de `erroresRadar`, y devuelve un arreglo de 14 posiciones (forma abajo). `dibujarRadar(resultado)` solo recorre ese arreglo y dibuja un punto donde `estado` sea `"completo"`: no vuelve a decidir nada que ya haya decidido `calcularRadar`. |
+| ¿Cómo se acomodan las calificaciones en el estado guardado, y cambia la versión del formato? | Es una clave nueva, `datos.RADAR`, junto a las otras ocho. No cambia la versión del formato guardado. `Persistencia.cargar()` debe devolver `RADAR` con 56 `null` si un estado guardado anterior no la tiene. Su forma está justo debajo. |
+| ¿Qué contiene el archivo exportado (escenario RE-4)? | No se resuelve en esta fase: sigue abierto para Construction II. |
+
+**Forma de `ResultadoRadar`.** Un arreglo de 14 posiciones, una por componente, en el orden fijo de la tabla de estructura de Elaboration I de este módulo (Movilización 1, 2 y 3, Traducción 1, 2 y 3, Alineamiento 1 y 2, Motivación 1, 2 y 3, Gestión 1, 2 y 3, que son también las puntas 1 a 14 del radar). Cada posición es `{ estado, puntaje }`:
+
+- `estado: "inválido"` si alguna de las características de ese componente tiene un error de rango, sin importar cuántas otras estén calificadas. `puntaje: null`.
+- Si ninguna de sus características tiene error:
+  - `estado: "completo"` con `puntaje` (el promedio de sus calificaciones) si todas tienen valor.
+  - `estado: "incompleto"` con `puntaje: null` si algunas tienen valor y otras no.
+  - `estado: "vacío"` con `puntaje: null` si ninguna tiene valor.
+
+Con esto, `ResultadoRadar` agrega a los tres estados de Elaboration I el cuarto, `"inválido"`, que corresponde a la prueba RE.10. Ejemplo con el caso de la prueba RE.1, donde las posiciones 0, 3, 5 y 13 son completas y las otras diez están vacías:
+
+```text
+[
+  { estado: "completo", puntaje: 1.5 },   // Movilización 1
+  { estado: "vacío",    puntaje: null },  // Movilización 2
+  { estado: "vacío",    puntaje: null },  // Movilización 3
+  { estado: "completo", puntaje: 3.0 },   // Traducción 1
+  { estado: "vacío",    puntaje: null },  // Traducción 2
+  { estado: "completo", puntaje: 0.0 },   // Traducción 3
+  { estado: "vacío",    puntaje: null },  // Alineamiento 1
+  { estado: "vacío",    puntaje: null },  // Alineamiento 2
+  { estado: "vacío",    puntaje: null },  // Motivación 1
+  { estado: "vacío",    puntaje: null },  // Motivación 2
+  { estado: "vacío",    puntaje: null },  // Motivación 3
+  { estado: "vacío",    puntaje: null },  // Gestión 1
+  { estado: "vacío",    puntaje: null },  // Gestión 2
+  { estado: "completo", puntaje: 5.0 }    // Gestión 3
+]
+```
+
+Esta decisión cambia una firma de Elaboration II: `calcularRadar(calificaciones)` pasa a `calcularRadar(calificaciones, errores)`. La nota del diagrama de clases, el escenario RE-3 y su diagrama de secuencia de Elaboration II de este módulo describen todavía la firma anterior y el filtrado de componentes por parte de la Vista; quedan pendientes de un commit de sincronización aparte, igual que en fases anteriores.
+
+**Forma de `estado.datos.RADAR`:**
+
+```text
+{
+  calificaciones: [c1, c2, ..., c56]
+}
+```
+
+- Cada `ci` es un entero de 0 a 5, o `null` si no se calificó. En el estado limpio, las 56 posiciones son `null`.
+- El índice de cada característica es plano, de 0 a 55, y sigue el orden fijo de la tabla de estructura de Elaboration I: desde la primera característica del primer componente de Movilización hasta la última de Gestión. Las características de cada componente ocupan estos índices:
+
+  | Componente | Índices | Componente | Índices |
+  |---|---|---|---|
+  | Movilización 1 | 0 a 3 | Alineamiento 2 | 28 a 31 |
+  | Movilización 2 | 4 a 7 | Motivación 1 | 32 a 35 |
+  | Movilización 3 | 8 a 11 | Motivación 2 | 36 a 39 |
+  | Traducción 1 | 12 a 16 | Motivación 3 | 40 a 43 |
+  | Traducción 2 | 17 a 20 | Gestión 1 | 44 a 47 |
+  | Traducción 3 | 21 a 23 | Gestión 2 | 48 a 51 |
+  | Alineamiento 1 | 24 a 27 | Gestión 3 | 52 a 55 |
+
+- Ejemplo con los datos de la prueba RE.1 (calificadas las posiciones 0 a 3, 12 a 16, 21 a 23 y 52 a 55, el resto `null`):
+
+```text
+{
+  calificaciones: [
+    0, 1, 2, 3,           // Movilización 1
+    null, null, null, null,   // Movilización 2
+    null, null, null, null,   // Movilización 3
+    0, 0, 5, 5, 5,        // Traducción 1
+    null, null, null, null,   // Traducción 2
+    0, 0, 0,              // Traducción 3
+    null, null, null, null,   // Alineamiento 1
+    null, null, null, null,   // Alineamiento 2
+    null, null, null, null,   // Motivación 1
+    null, null, null, null,   // Motivación 2
+    null, null, null, null,   // Motivación 3
+    null, null, null, null,   // Gestión 1
+    null, null, null, null,   // Gestión 2
+    5, 5, 5, 5            // Gestión 3
+  ]
+}
+```
+
+Reglas que acompañan a esa forma:
+
+- **Campos del formulario.** Cada calificación usa el mismo patrón `data-campo` que las demás matrices, con una ruta como `calificaciones.0` (índice plano, no fila y columna como en Análisis Estructural, porque aquí no hay matriz NxN).
+- **Sin agregar ni quitar.** La estructura es fija (prueba RE.7): el módulo no tiene botones "+" ni "−", y la forma guardada nunca cambia de longitud, siempre son 56 posiciones.
+- **Estado guardado anterior.** Un estado guardado sin `datos.RADAR` no se descarta: se completa con `RADAR` con 56 `null`, de modo que los datos de las otras matrices sobreviven a la actualización. Además, `"RADAR"` pasa a ser un valor válido de matriz activa. Con él, el discriminador `matriz` tiene nueve valores.
+
+### 2. Esqueleto del proyecto
+
+No hay un bloque de código nuevo. Se extendió el esqueleto de la Construction I del Módulo 1 (arriba, en este documento) agregando solo estos stubs, en el lugar de cada componente que corresponde y con la convención de nombres ya usada (`calcularAE`, `erroresAE`, `formularioAE`, `resultadosAE`). Cada cuerpo queda vacío con un marcador de posición.
+
+| Dónde en el esqueleto | Stub nuevo | Tipo |
+|---|---|---|
+| `<main>`, después de la sección AE | `<section id="matriz-radar" class="matriz" data-matriz="RADAR" hidden>` con los cuatro contenedores `formulario`, `errores`, `resultados` y `grafico` | Contenedor HTML |
+| Antes de `Validador` | `erroresRadar(datos, errores)` | Auxiliar privada |
+| `MotorCalculo` | `calcularRadar(calificaciones, errores)` | Método público, con una firma ajustada respecto de Elaboration II |
+| `MotorGraficos` | `dibujarRadar(resultado)` | Método público, ya definido en Elaboration II |
+| `Persistencia.cargar` | Solo un comentario: devolver `RADAR` con 56 `null` si el estado guardado no lo trae | Comentario |
+| Antes de `Vista` | `formularioRadar(datos)` y `resultadosRadar(resultado)` | Auxiliares privadas |
+
+Lo que no cambia en el esqueleto: los seis objetos y sus firmas públicas, salvo las dos firmas nuevas de arriba. `Vista`, `Validador`, `Persistencia` y `Exportador` no suman ningún método público. Las auxiliares privadas son funciones sueltas del script, igual que `erroresAE` y `formularioAE`: no son métodos de los objetos y no modifican sus firmas.
+
+### Puntos nuevos marcados [VERIFICAR] en esta fase
+
+1. Forma de cada error de `erroresRadar`: la decisión del juez fija que son por característica, no por componente, pero no el formato de cada error. Se asume que cada error identifica la característica por su índice plano (0 a 55) y lleva un mensaje, a confirmar al implementar contra el formato de errores de los otros módulos.
+2. Redondeo del `puntaje`: la decisión del juez fija que es el promedio, no cuántos decimales conserva. Se asume el promedio sin redondear en `ResultadoRadar`, y que los dos decimales de las pruebas de Elaboration I son solo la forma de comparar y de mostrar.
+3. Control de la calificación en el formulario (selector, botones u otro) y mecanismo por el cual un valor fuera de rango llega al sistema (prueba RE.10): se definen en Construction II, junto con el diseño de `formularioRadar`.
+4. Contenido del archivo exportado y qué se escribe para los componentes no completos (escenario RE-4): sigue abierto para Construction II.
+5. Siguen abiertos los puntos de Elaboration I y II de este módulo: el título repetido de los dos componentes de Alineamiento, las calificaciones con decimales, la redacción de avisos y errores, el aspecto del radar vacío y el aviso al descartar un estado corrupto.
