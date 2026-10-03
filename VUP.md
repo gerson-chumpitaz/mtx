@@ -2435,7 +2435,7 @@ No se repite la tabla de los seis componentes del Módulo 1. Solo se agrega lo q
 |---|---|
 | Vista | Ningún método nuevo. Reutiliza `renderFormulario`, `renderResultados` y `despacharEvento` con un noveno valor de matriz, `"RADAR"`, para las 56 calificaciones agrupadas en cinco etapas y el radar de 14 puntas. Pregunta abierta para Construction I: si conviene seguir llamando "matriz" a ese discriminador cuando este módulo no tiene ninguna matriz NxN, o generalizar el nombre del campo ahora que ya no describe solo matrices [VERIFICAR]. |
 | Validador | Reutiliza `validarRango` con los límites de este módulo (0 a 5) sobre cada calificación (RE.10). La clasificación de cada componente en completo, incompleto o vacío no es el patrón binario de vacía o inválida que ya existe en los otros módulos, y probablemente necesita un método o ayudante nuevo. Pregunta abierta para Construction I, no se decide aquí [VERIFICAR]. |
-| Motor de Cálculo | Método nuevo `calcularRadar(calificaciones)`. Aplica exactamente la regla ya fijada y probada en Elaboration I: el puntaje de cada componente es el promedio de las calificaciones de sus propias características, con el número de características de ese componente como divisor, y solo se calcula si el componente está completo. Devuelve un `ResultadoRadar` con el estado de los 14 componentes y el puntaje de los completos. |
+| Motor de Cálculo | Método nuevo `calcularRadar(calificaciones, errores)`. Aplica exactamente la regla ya fijada y probada en Elaboration I: el puntaje de cada componente es el promedio de las calificaciones de sus propias características, con el número de características de ese componente como divisor, y solo se calcula si el componente está completo y ninguna de sus características tiene un error de rango. Devuelve un `ResultadoRadar` con el estado de los 14 componentes (completo, incompleto, vacío o inválido) y el puntaje de los completos. |
 | Motor de Gráficos | Método nuevo `dibujarRadar(resultado)`. Dibuja el radar de 14 puntas, cada una rotulada con el nombre corto de la etapa de su componente (RE.5), con el eje fijo de 0 en el centro a 5 en el borde, sin ajustarse al máximo observado (RE.4). Grafica solo los puntos de los componentes completos. |
 | Persistencia | Sin cambios: se reutiliza tal cual. Guarda las 56 calificaciones, con sus huecos, como parte del estado de la sesión. |
 | Exportador | Sin cambios en su firma. Qué contiene el archivo de este módulo queda abierto en el escenario RE-4. |
@@ -2504,7 +2504,7 @@ Cobertura de componentes por escenario:
 
 **Diagrama de clases**
 
-No se crea un diagrama nuevo. Se editó el `classDiagram` de la Elaboration II del Módulo 1 (arriba, en este documento) para agregar `+calcularRadar(calificaciones) ResultadoRadar` a `MotorCalculo` y `+dibujarRadar(resultado)` a `MotorGraficos`. Las demás clases y relaciones no cambian.
+No se crea un diagrama nuevo. Se editó el `classDiagram` de la Elaboration II del Módulo 1 (arriba, en este documento) para agregar `+calcularRadar(calificaciones, errores) ResultadoRadar` a `MotorCalculo` y `+dibujarRadar(resultado)` a `MotorGraficos`. Las demás clases y relaciones no cambian.
 
 **Diagrama de secuencia del escenario RE-1: flujo principal**
 
@@ -2521,7 +2521,7 @@ sequenceDiagram
     V->>P: guardar(estado)
     V->>VA: validar(RADAR, datos)
     VA-->>V: ninguna calificación fuera de rango
-    V->>MC: calcularRadar(calificaciones)
+    V->>MC: calcularRadar(calificaciones, errores)
     MC-->>V: estado de los 14 componentes y puntaje de los completos
     V->>MG: dibujarRadar(resultado)
     MG-->>V: radar de 14 puntas rotuladas con los puntos de los completos
@@ -2545,7 +2545,7 @@ sequenceDiagram
     V->>P: guardar(estado)
     V->>VA: validar(RADAR, datos)
     VA-->>V: ninguna calificación fuera de rango, sin error
-    V->>MC: calcularRadar(calificaciones)
+    V->>MC: calcularRadar(calificaciones, errores)
     MC-->>V: ese componente incompleto o vacío sin puntaje, los demás con su estado
     V->>MG: dibujarRadar(resultado)
     MG-->>V: radar sin punto para ese componente
