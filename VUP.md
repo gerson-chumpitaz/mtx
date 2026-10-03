@@ -2122,3 +2122,75 @@ Respuesta: Los diez casos de Elaboration I, con números calculados y verificado
 **5. ¿Qué agregarías si siguieras desarrollando el proyecto?**
 
 Respuesta: Un botón para reiniciar los datos sin usar la consola del navegador, que quedó pendiente desde el Módulo 1, y resolver con el profesor el criterio de orden del ranking de Análisis Estructural, que nunca se pudo verificar porque la base de datos está protegida.
+
+## Inception — Módulo 3: Radar Estratégico
+
+Objetivo de la fase: abrir un tercer ciclo VUP dentro de este mismo documento, para el módulo de Radar Estratégico, con la misma estructura de la Inception original y de la del Módulo 2. Esta fase no escribe código, no define firmas de componentes ni pruebas Given-When-Then (eso es Elaboration I de este módulo) y no modifica `index.html` ni `tests/`. El módulo reutiliza la visión, la justificación y los requisitos no funcionales generales de la Inception original; aquí solo se agrega lo que es propio de Radar Estratégico.
+
+### Nombre del módulo
+
+Radar Estratégico (el profesor lo nombra "El Radar de la Posición Estratégica"; se basa en el modelo Execution Premium de Kaplan y Norton, los mismos autores del Balanced Scorecard).
+
+### Alcance v1
+
+Este módulo es una sola herramienta con cinco etapas internas fijas, no un conjunto de matrices independientes entre sí. Mide qué tan lejos está una organización de la gestión estratégica ideal. Todo lo que sigue se apoya en la revisión directa que hizo el juez del archivo original del profesor (ver "Fuentes consultadas").
+
+Las cinco etapas, en orden:
+
+1. **Movilización:** liderazgo ejecutivo para el cambio. 3 componentes.
+2. **Traducción:** la estrategia en términos operacionales. 3 componentes.
+3. **Alineamiento:** toda la organización en torno a la estrategia. 2 componentes.
+4. **Motivación:** hacer de la estrategia el trabajo de todos. 3 componentes.
+5. **Gestión:** la estrategia como proceso continuo. 3 componentes.
+
+Estructura del contenido:
+
+- Son 14 componentes en total (3 + 3 + 2 + 3 + 3). Cada componente se descompone en un número fijo de características a evaluar, de tres a cinco cada uno, 56 en total.
+- Los nombres de las etapas, los componentes y las características, así como el texto de cada afirmación, son contenido fijo del profesor. El estudiante no los redacta ni los modifica.
+
+Lo que hace la herramienta en v1:
+
+- **Calificación.** El estudiante califica cada una de las 56 afirmaciones con un número de 0 a 5 que mide su nivel de concordancia con ella. La escala está invertida: el propio archivo lo advierte con la frase "a mayor intensidad de acuerdo, menor alejamiento y menor debe ser el número a utilizar". 0 significa "Estoy completamente de acuerdo" (el objetivo ideal ya se cumple, cero alejamiento) y 5 significa "Estoy en completo desacuerdo" (máximo alejamiento). No es una escala donde más puntaje es mejor.
+- **Puntaje por componente.** El puntaje de cada uno de los 14 componentes es el promedio de los puntajes de sus características. En el Excel original la fórmula real de una celda es `=SUM(F23:F26)/4` para un componente de cuatro características, y otras hojas del mismo archivo que usan la misma mecánica calculan lo mismo con `=AVERAGE(...)`. En Mtx se usa el promedio (AVERAGE) en vez de replicar una suma dividida entre un número fijo escrito a mano: es matemáticamente idéntico y no depende de un número mágico que se desalinee si cambia la cantidad de características de un componente.
+- **Gráfico radar.** Un radar de 14 puntas, una por componente. Se verificó directamente en el XML del gráfico del Excel, no por lectura visual, que el eje de valores va de 0 en el centro a 5 en el borde exterior. Como la escala está invertida, una figura que se estira hacia afuera en una punta señala un problema en ese componente, no una fortaleza, al revés de la lectura intuitiva habitual de un gráfico radar. Esto debe quedar explícito en la interfaz para que el estudiante no lo lea al revés.
+- **Rótulos de las puntas.** El gráfico original de Excel no tiene ninguna etiqueta de categoría conectada a los datos: la serie solo referencia el rango de los 14 promedios, sin ningún rango de categorías, así que las 14 puntas aparecen sin nombre. El nombre completo de cada componente y el nombre corto de cada etapa existen como texto al lado del gráfico, pero no están enlazados a él. Decisión del juez: en Mtx sí se rotulan las puntas, al menos con el nombre corto de la etapa de cada componente, porque un radar de catorce puntas sin ninguna referencia visual no es utilizable para un estudiante. Es una mejora de interfaz, no un cambio de cálculo, en el mismo espíritu que las correcciones visuales ya aceptadas en Construction II del Módulo 1.
+
+### Fuera de alcance (v1) de este módulo
+
+- **Ejemplo 5S de Lean.** El mismo archivo contiene, en dos hojas adicionales ("5s situación anterior" y "situación actual con mejoras"), un ejemplo distinto armado con la misma mecánica de radar pero aplicado a la metodología 5S (Seiri, Seiton, Seiso, Seiketsu, Shitsuke), con un caso de antes y después de una empresa de servicio posventa. Es un ejemplo ilustrativo propio del profesor para otra aplicación de la misma herramienta genérica, no parte de lo que el estudiante del curso debe cargar para su Radar Estratégico. Queda fuera de v1.
+
+### Historia de usuario
+
+Como estudiante, quiero calificar mi nivel de acuerdo con cada una de las cincuenta y seis afirmaciones agrupadas en las cinco etapas de la gestión estratégica, para que el sistema calcule automáticamente el puntaje de cada uno de los catorce componentes y me muestre en un gráfico radar qué tan lejos estoy del objetivo ideal en cada uno.
+
+Es una sola historia porque el módulo es una sola herramienta con cinco etapas internas fijas, no matrices independientes entre sí: el estudiante no recorre las etapas por separado ni obtiene un resultado útil de una sola, sino que califica las 56 afirmaciones y lee un único radar.
+
+### Requisitos no funcionales específicos del módulo
+
+Ya cubiertos por los requisitos no funcionales generales de la Inception original y por lo tanto no se repiten: cálculo íntegro en el navegador, apertura con doble clic sin instalación, interfaz usable por un estudiante sin conocimientos técnicos, y guardado automático del progreso en localStorage. Los que no están cubiertos:
+
+- **Estructura fija, sin listas de longitud variable.** Esta es la diferencia estructural más importante frente a los módulos anteriores. El estudiante no agrega ni quita etapas, componentes ni características: solo califica los 56 ítems fijos del profesor. No aplica el patrón de botones "+" y "−" usado en Análisis Estructural, ni ninguna otra forma de alterar la cantidad de filas. La interfaz no debe ofrecer controles para agregar, quitar, renombrar ni reordenar etapas, componentes o características.
+- **Fidelidad a la regla del profesor, no a la bibliografía.** El requisito general pide coincidir con las fórmulas clásicas verificables contra un caso de bibliografía conocido. En este módulo la referencia autoritativa es el Excel del profesor: puntaje de componente como promedio de sus características, escala de 0 a 5 con el sentido invertido, y eje del gráfico de 0 en el centro a 5 en el borde. Donde la presentación habitual de un gráfico radar y el Excel del profesor difieran, el sistema sigue al Excel, salvo las mejoras de interfaz aceptadas (rótulos de las puntas).
+- **Lectura invertida explícita.** La interfaz debe dejar claro, junto a la calificación y junto al gráfico, que 0 es el mejor valor y 5 el peor, y que una punta que se estira hacia afuera indica un problema. Es un requisito de interfaz propio de este módulo, porque la lectura intuitiva de una escala y de un gráfico radar es la contraria.
+
+### Riesgos de desarrollo y puntos [VERIFICAR] de este módulo
+
+Riesgos:
+
+- Para este modelo no existe ninguna guía del profesor. Ni la "Guía de uso, Cargar los Modelos Estratégicos" ni "Qué carga usted y qué sale solo" lo cubren, porque ambas se limitan explícitamente a los tres modelos que dependen de Access. El "Manual técnico" solo confirma, en una tabla, que este modelo no usa base de datos y calcula directamente en la hoja. Las reglas de este módulo salen por eso de la inspección directa del Excel (celdas, fórmulas y XML del gráfico), no de un documento que las explique.
+- El contenido fijo del profesor trae al menos una inconsistencia propia, no de la lógica del sistema (punto 1 de la lista siguiente). Como el texto es del profesor y el estudiante no lo edita, cualquier error de redacción se hereda tal cual hasta que el profesor lo confirme.
+
+Puntos [VERIFICAR]:
+
+1. **Título repetido de dos componentes de Alineamiento (para el profesor).** El componente de la fila 69 y el de la fila 74 del Excel, ambos dentro de la etapa de Alineamiento, tienen exactamente el mismo título ("LA ESTRATEGIA CORPORATIVA ES UTILIZADA PARA GUIAR LAS ESTRATEGIAS DE LAS UNIDADES DE NEGOCIO"), aunque sus características a evaluar son distintas: las de la fila 74 hablan de reuniones con "unidades de soporte", no de unidades de negocio. Parece un error de copiar y pegar. No se corrige el texto por cuenta propia: falta que el profesor confirme el título correcto del segundo componente.
+2. **Gráfico con ítems sin completar (de desarrollo, se resuelve en Elaboration I).** Falta decidir si debe exigirse completar las 56 características antes de mostrar el gráfico, o si se permite verlo parcial, con las que falten en su valor por defecto.
+
+### Fuentes consultadas
+
+Archivos originales del profesor, en `C:\Obsidian\Mi_Segundo_Cerebro\07_gestion_estrategica_software\Modelos Estrategicos\`, revisados directamente por el juez (la sesión de Cowork del Project "Prompt Engineering") abriendo sus celdas, sus fórmulas y el XML real de su gráfico, y usados aquí como hallazgos verificados:
+
+- `RADAR ESTRATEGICO (1).xls`: el Excel del modelo. De él salen las cinco etapas, los 14 componentes y las 56 características, la escala invertida de 0 a 5, la fórmula del puntaje de cada componente, el eje del gráfico (0 a 5), la ausencia de etiquetas de categoría en el gráfico, el título repetido de la fila 69 y la fila 74, y las dos hojas del ejemplo 5S.
+- `Manual tecnico - Modelos Estrategicos.pdf`: solo confirma, en una tabla, que este modelo no usa base de datos y calcula directamente en la hoja.
+- `Guia de uso - Cargar los Modelos Estrategicos.pdf` y `Que carga usted y que sale solo.pdf`: no cubren este modelo, porque se limitan a los tres modelos que dependen de Access.
+
+Este Inception se escribió a partir de esos hallazgos, tal como los entregó el juez. El constructor no volvió a abrir los archivos originales en esta fase.
