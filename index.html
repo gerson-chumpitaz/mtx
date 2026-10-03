@@ -1117,7 +1117,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       // decidió calcularRadar. Cada punta se rotula "<Etapa> <posición>".
       dibujarRadar(resultado) {
         const contenedor = contenedorGrafico('RADAR');
-        const ancho = 640, alto = 620, cx = 320, cy = 285, radio = 200;
+        const ancho = 640, alto = 650, cx = 320, cy = 285, radio = 200;
         const MAXIMO_EJE = 5;
         const cantidad = ESTRUCTURA_RADAR.length;
         const angulo = (k) => -Math.PI / 2 + (2 * Math.PI * k) / cantidad;
@@ -1132,12 +1132,16 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           const coseno = Math.cos(angulo(k));
           nodos.push(
             svg('line', { x1: cx, y1: cy, x2: px(k, MAXIMO_EJE), y2: py(k, MAXIMO_EJE), class: 'g-rejilla' }),
-            texto(cx + (radio + 12) * coseno, cy + (radio + 12) * Math.sin(angulo(k)) + 4, componente.nombre, 'g-texto',
+            texto(cx + (radio + 20) * coseno, cy + (radio + 20) * Math.sin(angulo(k)) + 4, componente.nombre, 'g-texto',
               { 'text-anchor': coseno > 0.2 ? 'start' : (coseno < -0.2 ? 'end' : 'middle') })
           );
         });
+        // Números de la escala (0 a 5): sobre el eje que sale entre las puntas 11 y 12 (hacia la izquierda), donde no hay ninguna punta ni
+        // rótulo, y a la izquierda de cada anillo para que no los cruce. Así no se pisan con los rótulos de las puntas ni con los puntos.
+        const anguloEscala = angulo(10.5);
         for (let v = 0; v <= MAXIMO_EJE; v++) {
-          nodos.push(texto(cx + 4, cy - (radio * v) / MAXIMO_EJE + (v === 0 ? 14 : -3), v, 'g-texto-tenue'));
+          const distancia = (radio * v) / MAXIMO_EJE;
+          nodos.push(texto(cx + distancia * Math.cos(anguloEscala) - (v === 0 ? 10 : 3), cy + distancia * Math.sin(anguloEscala) + 4, v, 'g-texto-tenue', { 'text-anchor': 'end' }));
         }
 
         resultado.forEach((componente, k) => {
@@ -1152,11 +1156,15 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           ]));
         });
 
-        nodos.push(
-          texto(cx, alto - 52, 'Escala invertida: 0 en el centro (el objetivo ideal ya se cumple) y 5 en el borde (máximo alejamiento).', 'g-texto-tenue', { 'text-anchor': 'middle' }),
-          texto(cx, alto - 32, 'Un punto que se aleja del centro señala un problema en ese componente, no una fortaleza.', 'g-texto-tenue', { 'text-anchor': 'middle' }),
-          texto(cx, alto - 12, 'Solo se grafican los componentes con todas sus características calificadas.', 'g-texto-tenue', { 'text-anchor': 'middle' })
-        );
+        // Pie: líneas de no más de unos 65 caracteres, para que quepan dentro del recuadro con cualquier tipografía común.
+        [
+          'Escala invertida: 0 en el centro (el objetivo ideal ya se cumple)',
+          'y 5 en el borde exterior (máximo alejamiento).',
+          'Un punto que se aleja del centro señala un problema',
+          'en ese componente, no una fortaleza.',
+          'Solo se grafican los componentes con todas sus',
+          'características calificadas.'
+        ].forEach((linea, i) => nodos.push(texto(cx, 535 + 18 * i, linea, 'g-texto-tenue', { 'text-anchor': 'middle' })));
         contenedor.append(svg('svg', {
           viewBox: '0 0 ' + ancho + ' ' + alto, role: 'img', 'aria-label': 'Radar Estratégico de 14 puntas, una por componente, con el eje de 0 en el centro a 5 en el borde'
         }, nodos));
