@@ -37,6 +37,16 @@
     .aviso { color: #7c5e10; background: #fff8e1; border: 1px solid #f0d78c; border-radius: 4px; padding: 0.4rem 0.6rem; }
     .pendiente { background: #fff8e1; border: 1px solid #f0d78c; border-radius: 4px; padding: 0.75rem 1rem; }
     .grafico svg { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
+    /* RADAR: formulario a la izquierda y panel fijo (errores y gráfico) a la derecha */
+    @media (min-width: 75rem) {
+      main:has(#matriz-radar:not([hidden])) { max-width: 92rem; }
+      #matriz-radar:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) 36rem; grid-template-areas: "titulo titulo" "formulario panel" "resultados resultados"; column-gap: 1.5rem; align-items: start; }
+      #matriz-radar > h2 { grid-area: titulo; }
+      #matriz-radar > .formulario { grid-area: formulario; }
+      #matriz-radar > .panel-radar { grid-area: panel; position: sticky; top: 0.75rem; max-height: calc(100vh - 1.5rem); overflow-y: auto; }
+      #matriz-radar > .resultados { grid-area: resultados; }
+    }
+    #matriz-radar .grafico svg { max-width: 36rem; margin-left: auto; margin-right: auto; }
     /* Colores de los gráficos SVG */
     .g-eje { stroke: #52606d; stroke-width: 1.5; fill: none; }
     .g-rejilla { stroke: #d9e0e7; stroke-width: 1; }
@@ -158,9 +168,11 @@
     <section id="matriz-radar" class="matriz" data-matriz="RADAR" hidden>
       <h2>RADAR</h2>
       <div class="formulario"></div>
-      <div class="errores"></div>
+      <div class="panel-radar">
+        <div class="errores"></div>
+        <div class="grafico"></div>
+      </div>
       <div class="resultados"></div>
-      <div class="grafico"></div>
     </section>
   </main>
 

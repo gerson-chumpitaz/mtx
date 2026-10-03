@@ -1,6 +1,6 @@
 'use strict';
 // Verifica Validador, MotorCalculo y Exportador de index.html contra las pruebas Given-When-Then de Elaboration I
-// (Módulo 1: pruebas 1.1 a 6.1; Módulo 2, Análisis Estructural: pruebas AE.1 a AE.10; Módulo 3, Radar Estratégico: pruebas RE.1 a RE.11).
+// (Módulo 1: pruebas 1.1 a 6.1; Módulo 2, Análisis Estructural: pruebas AE.1 a AE.10; Módulo 3, Radar Estratégico: pruebas RE.1 a RE.12).
 // Uso: node tests/elaboration1.test.js   (sin dependencias; el navegador no interviene)
 
 const fs = require('fs');
@@ -647,6 +647,32 @@ prueba('RE.11', 'RADAR: los datos siguen tras recargar (persistencia y recálcul
   danado.datos.RADAR = { calificaciones: ['1', '2'] };
   almacen['mtx.estado'] = JSON.stringify(danado);
   igual(app3.Persistencia.cargar().datos.RADAR, { calificaciones: new Array(56).fill(null) }, 'RADAR dañado: 56 null');
+});
+
+// Disposición de la sección RADAR en dos columnas (ronda correctiva de Construction II): se comprueba el marcado estático, que es lo que usa el CSS
+// para ubicar el formulario a la izquierda y el panel (errores y gráfico) a la derecha. Las medidas en pantalla se verifican en un navegador.
+prueba('RE.12', 'RADAR: el marcado de la sección tiene un solo formulario, errores, resultados y gráfico, con errores y gráfico dentro del panel fijo', (esperar, igual) => {
+  const seccion = html.match(/<section id="matriz-radar"[\s\S]*?<\/section>/);
+  esperar(seccion !== null, 'debía existir la sección matriz-radar en index.html');
+  const marcado = seccion[0];
+  const contar = (clase) => (marcado.match(new RegExp('<div class="' + clase + '"', 'g')) || []).length;
+  ['formulario', 'errores', 'resultados', 'grafico', 'panel-radar'].forEach((clase) => igual(contar(clase), 1, 'cantidad de .' + clase));
+  const posicion = (clase) => marcado.indexOf('<div class="' + clase + '"');
+  // Fin del panel: se cuentan las aperturas y los cierres de div desde su apertura.
+  const inicioPanel = posicion('panel-radar');
+  let profundidad = 0, finPanel = -1;
+  const etiquetas = /<div\b|<\/div>/g;
+  etiquetas.lastIndex = inicioPanel;
+  for (let m = etiquetas.exec(marcado); m !== null && finPanel < 0; m = etiquetas.exec(marcado)) {
+    profundidad += m[0] === '<div' ? 1 : -1;
+    if (profundidad === 0) finPanel = m.index;
+  }
+  esperar(finPanel > inicioPanel, 'el panel debía cerrarse');
+  const dentro = (clase) => posicion(clase) > inicioPanel && posicion(clase) < finPanel;
+  esperar(dentro('errores'), '.errores debía estar dentro de .panel-radar');
+  esperar(dentro('grafico'), '.grafico debía estar dentro de .panel-radar');
+  esperar(posicion('formulario') >= 0 && posicion('formulario') < inicioPanel, '.formulario debía ir antes de .panel-radar');
+  esperar(posicion('resultados') > finPanel, '.resultados debía ir después de .panel-radar');
 });
 
 // ---------------------------------------------------------------------------
