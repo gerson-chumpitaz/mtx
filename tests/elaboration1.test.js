@@ -1,6 +1,6 @@
 'use strict';
 // Verifica Validador, MotorCalculo y Exportador de index.html contra las pruebas Given-When-Then de Elaboration I
-// (Módulo 1: pruebas 1.1 a 6.1; Módulo 2, Análisis Estructural: pruebas AE.1 a AE.10; Módulo 3, Radar Estratégico: pruebas RE.1 a RE.12).
+// (Módulo 1: pruebas 1.1 a 6.1; Módulo 2, Análisis Estructural: pruebas AE.1 a AE.10; Módulo 3, Radar Estratégico: pruebas RE.1 a RE.13).
 // Uso: node tests/elaboration1.test.js   (sin dependencias; el navegador no interviene)
 
 const fs = require('fs');
@@ -673,6 +673,66 @@ prueba('RE.12', 'RADAR: el marcado de la sección tiene un solo formulario, erro
   esperar(dentro('grafico'), '.grafico debía estar dentro de .panel-radar');
   esperar(posicion('formulario') >= 0 && posicion('formulario') < inicioPanel, '.formulario debía ir antes de .panel-radar');
   esperar(posicion('resultados') > finPanel, '.resultados debía ir después de .panel-radar');
+});
+
+// Números de puntaje del radar (corrección de Construction III): se dibujan todos cuando los puntos están separados y, cuando están muy juntos,
+// solo los que caben sin pisar otro texto ni un punto. Se comprueban las posiciones del SVG simulado. El ancho de cada texto se estima con 7 unidades
+// por carácter, el mismo ancho estimado que usa `dibujarRadar` para decidir dónde cabe un número (no se mide la tipografía real: eso se verificó en un
+// navegador); aquí el margen es 0, el del código es 2.
+prueba('RE.13', 'RADAR: los números de puntaje no se pisan con otro texto ni con un punto; si no caben, se omiten y el punto conserva su texto emergente', (esperar, igual) => {
+  const D2 = [[1, 2, 2, 3], [0, 1, 1, 1], [4, 4, 5, 4], [2, 3, 3, 2, 3], [1, 1, 2, 1], [2, 2, 3], [5, 5, 4, 5], [0, 0, 0, 1], [3, 3, 3, 3], [2, 1, 2, 2], [4, 4, 5, 5], [1, 0, 1, 0], [3, 2, 3, 3], [2, 2, 1, 1]];
+  const D4 = [[0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1, 0], [1, 0, 0, 0], [0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0], [1, 0, 0, 1]];
+  const desdeArreglo = (porComponente) => datosRadar(Object.fromEntries(porComponente.map((valores, k) => [NOMBRES_RADAR[k], valores])));
+  const num = (n, clave) => Number(n.atributos[clave]);
+  const rectDeTexto = (t) => {
+    const w = t.hijos[0].length * 7;
+    const x = num(t, 'x'), y = num(t, 'y');
+    const x0 = t.atributos['text-anchor'] === 'end' ? x - w : (t.atributos['text-anchor'] === 'middle' ? x - w / 2 : x);
+    return { x0, x1: x0 + w, y0: y - 11, y1: y + 3 };
+  };
+  const cruzan = (r, s) => r.x0 < s.x1 && s.x0 < r.x1 && r.y0 < s.y1 && s.y0 < r.y1;
+  const dibujar = (resultado) => {
+    appDOM.MotorGraficos.dibujarRadar(resultado);
+    const nodos = aplanarNodos(appDOM.contenedor.hijos[0]);
+    const textos = nodos.filter((n) => n.etiqueta === 'text');
+    const puntos = nodos.filter((n) => n.etiqueta === 'circle' && n.atributos.class === 'punto-radar');
+    const esNumero = (t) => /^\d\.\d\d$/.test(t.hijos[0]);
+    const numeros = textos.filter(esNumero);
+    const otros = textos.filter((t) => !esNumero(t));
+    const rectPunto = (p) => ({ x0: num(p, 'cx') - 7, x1: num(p, 'cx') + 7, y0: num(p, 'cy') - 7, y1: num(p, 'cy') + 7 });
+    let pisaTexto = 0, pisaPunto = 0;
+    numeros.forEach((n, i) => {
+      const r = rectDeTexto(n);
+      otros.forEach((o) => { if (cruzan(r, rectDeTexto(o))) pisaTexto++; });
+      numeros.forEach((m, j) => { if (j > i && cruzan(r, rectDeTexto(m))) pisaTexto++; });
+      puntos.forEach((p) => { if (cruzan(r, rectPunto(p))) pisaPunto++; });
+    });
+    return { numeros: numeros.map((n) => n.hijos[0]), puntos: puntos.length, pisaTexto, pisaPunto, titulos: puntos.map((p) => p.hijos[0].hijos[0]) };
+  };
+
+  // Puntos separados: se dibujan todos los números.
+  const caso1 = dibujar(evaluarRadar(datosRadar(casoRE1())).resultado);
+  igual(caso1.puntos, 4, 'RE.1: cuatro puntos');
+  igual(caso1.numeros.slice().sort(), ['0.00', '1.50', '3.00', '5.00'], 'RE.1: los cuatro números de puntaje');
+  igual([caso1.pisaTexto, caso1.pisaPunto], [0, 0], 'RE.1: ningún número pisa otro texto ni un punto');
+  const resultadoD2 = evaluarRadar(desdeArreglo(D2)).resultado;
+  const casoD2 = dibujar(resultadoD2);
+  igual(casoD2.puntos, 14, 'D-RA2: catorce puntos');
+  igual(casoD2.numeros.length, 14, 'D-RA2: se dibujan los 14 números');
+  igual(casoD2.numeros.slice().sort(), resultadoD2.map((c) => c.puntaje.toFixed(2)).sort(), 'D-RA2: son los 14 puntajes');
+  igual([casoD2.pisaTexto, casoD2.pisaPunto], [0, 0], 'D-RA2: ningún número pisa otro texto ni un punto');
+
+  // Puntos muy juntos cerca del centro (D-RA4, "empresa sana"): algunos números no caben y se omiten.
+  const resultadoD4 = evaluarRadar(desdeArreglo(D4)).resultado;
+  igual(resultadoD4.map((c) => c.puntaje.toFixed(2)), ['0.25', '0.25', '0.25', '0.20', '0.25', '0.33', '0.25', '0.00', '0.25', '0.25', '0.25', '0.25', '0.00', '0.50'], 'D-RA4: los 14 puntajes');
+  const casoD4 = dibujar(resultadoD4);
+  igual(casoD4.puntos, 14, 'D-RA4: los 14 puntos siguen dibujados');
+  esperar(casoD4.numeros.length >= 1 && casoD4.numeros.length < 14, 'D-RA4: se dibuja al menos un número y se omite alguno (' + casoD4.numeros.length + ' de 14)');
+  igual([casoD4.pisaTexto, casoD4.pisaPunto], [0, 0], 'D-RA4: ningún número dibujado pisa otro texto ni un punto');
+  igual(casoD4.titulos, resultadoD4.map((c, k) => NOMBRES_RADAR[k] + ': ' + c.puntaje.toFixed(2)), 'D-RA4: cada punto, también el que quedó sin número, conserva su texto emergente "<componente>: <puntaje>"');
+  // Los puntos conservan su posición: la distancia al centro sigue siendo el puntaje dividido entre 5 del radio.
+  const t4 = trazadoRadar(resultadoD4);
+  igualLista(igual, t4.puntos.map((p) => p.fraccion), resultadoD4.map((c) => c.puntaje / 5), 'D-RA4: distancias de los puntos al centro');
 });
 
 // ---------------------------------------------------------------------------

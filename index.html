@@ -1156,15 +1156,51 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           nodos.push(texto(cx + distancia * Math.cos(anguloEscala) - (v === 0 ? 10 : 3), cy + distancia * Math.sin(anguloEscala) + 4, v, 'g-texto-tenue', { 'text-anchor': 'end' }));
         }
 
+        // Números de puntaje: cada uno se coloca en la primera de ocho posiciones alrededor de su punto que no pise ningún otro texto ni punto;
+        // si ninguna queda libre (puntos muy juntos cerca del centro), ese número no se dibuja (queda en el texto emergente y en la tabla).
+        // Se reparte primero a los puntos más alejados del centro, que son los que tienen más espacio. Los anchos son estimados.
+        const ANCHO_CARACTER = 7, MARGEN = 2;
+        const rectTexto = (x, y, cadena, ancla) => {
+          const w = cadena.length * ANCHO_CARACTER;
+          const x0 = ancla === 'start' ? x : (ancla === 'end' ? x - w : x - w / 2);
+          return { x0: x0 - MARGEN, x1: x0 + w + MARGEN, y0: y - 11 - MARGEN, y1: y + 3 + MARGEN };
+        };
+        const cruzan = (r, s) => r.x0 < s.x1 && s.x0 < r.x1 && r.y0 < s.y1 && s.y0 < r.y1;
+        const ocupados = [];
+        ESTRUCTURA_RADAR.forEach((componente, k) => {
+          const coseno = Math.cos(angulo(k));
+          ocupados.push(rectTexto(cx + (radio + 20) * coseno, cy + (radio + 20) * Math.sin(angulo(k)) + 4, componente.nombre, coseno > 0.2 ? 'start' : (coseno < -0.2 ? 'end' : 'middle')));
+        });
+        for (let v = 0; v <= MAXIMO_EJE; v++) {
+          const distancia = (radio * v) / MAXIMO_EJE;
+          ocupados.push(rectTexto(cx + distancia * Math.cos(anguloEscala) - (v === 0 ? 10 : 3), cy + distancia * Math.sin(anguloEscala) + 4, String(v), 'end'));
+        }
+        const completos = [];
         resultado.forEach((componente, k) => {
           if (componente.estado !== 'completo') return;
-          const x = px(k, componente.puntaje);
-          const y = py(k, componente.puntaje);
+          completos.push({ k, puntaje: componente.puntaje, x: px(k, componente.puntaje), y: py(k, componente.puntaje) });
+        });
+        completos.forEach((c) => ocupados.push({ x0: c.x - 7, x1: c.x + 7, y0: c.y - 7, y1: c.y + 7 }));
+        const POSICIONES = [[9, -9, 'start'], [9, 17, 'start'], [-9, -9, 'end'], [-9, 17, 'end'], [11, 4, 'start'], [-11, 4, 'end'], [0, -13, 'middle'], [0, 21, 'middle']];
+        const etiquetas = new Map();
+        completos.slice().sort((p, q) => q.puntaje - p.puntaje || p.k - q.k).forEach((c) => {
+          const cadena = dosDecimales(c.puntaje);
+          for (const [dx, dy, ancla] of POSICIONES) {
+            const r = rectTexto(c.x + dx, c.y + dy, cadena, ancla);
+            if (r.x0 < 0 || r.x1 > ancho || r.y0 < 0 || r.y1 > alto) continue;
+            if (ocupados.some((o) => cruzan(r, o))) continue;
+            ocupados.push(r);
+            etiquetas.set(c.k, [c.x + dx, c.y + dy, cadena, ancla]);
+            break;
+          }
+        });
+        completos.forEach((c) => {
+          const e = etiquetas.get(c.k);
           nodos.push(svg('g', {}, [
-            svg('circle', { cx: x, cy: y, r: 6, class: 'punto-radar' }, [
-              svg('title', {}, [ESTRUCTURA_RADAR[k].nombre + ': ' + dosDecimales(componente.puntaje)])
+            svg('circle', { cx: c.x, cy: c.y, r: 6, class: 'punto-radar' }, [
+              svg('title', {}, [ESTRUCTURA_RADAR[c.k].nombre + ': ' + dosDecimales(c.puntaje)])
             ]),
-            texto(x + 9, y - 9, dosDecimales(componente.puntaje), 'g-texto')
+            ...(e ? [texto(e[0], e[1], e[2], 'g-texto', { 'text-anchor': e[3] })] : [])
           ]));
         });
 
