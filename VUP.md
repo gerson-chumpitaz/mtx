@@ -2101,7 +2101,7 @@ Al terminar se borró `mtx.estado` del origen para dejarlo limpio. Qué no se ve
 
 ### 3. Reflexión
 
-Preguntas de VUP para responder a mano. No las respondió la IA.
+Preguntas de VUP. La plantilla original pide que las responda la persona a mano; estas cinco las redactó el juez (la IA) con autorización explícita de Gerson.
 
 **1. ¿Qué fue lo más importante de la especificación?**
 
