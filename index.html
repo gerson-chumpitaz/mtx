@@ -201,7 +201,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     // Los seis objetos conservan exactamente las firmas del esqueleto de Construction I.
     // ---------------------------------------------------------------------------
 
-    const MATRICES = ['BCG', 'EFI', 'EFE', 'MPC', 'PEYEA', 'MIE', 'GE', 'AE'];
+    const MATRICES = ['BCG', 'EFI', 'EFE', 'MPC', 'PEYEA', 'MIE', 'GE', 'AE', 'RADAR'];
     const CLAVE_ALMACENAMIENTO = 'mtx.estado';
     const VERSION_ESTADO = 1;
     const TOLERANCIA_PESOS = 0.001;             // Elaboration I, prueba 2.4
@@ -991,6 +991,18 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         ae.marcas.every((marca) => marca === null || marca === 'SI' || marca === 'NO');
     }
 
+    // RADAR: { calificaciones: [c1, ..., c56] }, arreglo plano en el orden fijo de ESTRUCTURA_RADAR. Cada ci es un entero de 0 a 5
+    // (o su texto, como lo escribe el formulario) o null si no se calificó.
+    function radarVacio() {
+      return { calificaciones: new Array(TOTAL_CARACTERISTICAS_RADAR).fill(null) };
+    }
+
+    function radarValido(radar) {
+      return radar !== null && typeof radar === 'object' && Array.isArray(radar.calificaciones) &&
+        radar.calificaciones.length === TOTAL_CARACTERISTICAS_RADAR &&
+        radar.calificaciones.every((c) => c === null || typeof c === 'number' || typeof c === 'string');
+    }
+
     function estadoVacio() {
       const dos = (fabrica) => [fabrica(), fabrica()];
       return {
@@ -1015,7 +1027,8 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           },
           MIE: {},
           GE: {},
-          AE: aeVacio()
+          AE: aeVacio(),
+          RADAR: radarVacio()
         }
       };
     }
@@ -1055,6 +1068,8 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
           if (!esEstadoValido(estado)) return estadoVacio();
           // Un estado guardado antes del módulo AE no trae datos.AE (o lo trae dañado): se completa con AE vacío, sin cambiar la versión.
           if (!aeValido(estado.datos.AE)) estado.datos.AE = aeVacio();
+          // Igual para RADAR: un estado guardado antes del módulo no trae datos.RADAR (o lo trae dañado): se completa con 56 null.
+          if (!radarValido(estado.datos.RADAR)) estado.datos.RADAR = radarVacio();
           return estado;
         } catch (error) {
           return estadoVacio();    // vacío, corrupto o inaccesible
