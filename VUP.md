@@ -2709,3 +2709,76 @@ Lo que no cambia en el esqueleto: los seis objetos y sus firmas públicas, salvo
 3. Control de la calificación en el formulario (selector, botones u otro) y mecanismo por el cual un valor fuera de rango llega al sistema (prueba RE.10): se definen en Construction II, junto con el diseño de `formularioRadar`.
 4. Contenido del archivo exportado y qué se escribe para los componentes no completos (escenario RE-4): sigue abierto para Construction II.
 5. Siguen abiertos los puntos de Elaboration I y II de este módulo: el título repetido de los dos componentes de Alineamiento, las calificaciones con decimales, la redacción de avisos y errores, el aspecto del radar vacío y el aviso al descartar un estado corrupto.
+
+## Construction II — Módulo 3: Radar Estratégico
+
+Objetivo de la fase: implementar en `index.html` la lógica y las pantallas de Radar Estratégico sobre el esqueleto de Construction I, con las reglas ya fijadas en Elaboration I (pruebas RE.1 a RE.11) y las decisiones de arquitectura de Construction I. Es la primera fase de este módulo que escribe código. Lo que ya está en las fases anteriores no se repite aquí.
+
+### 1. Qué se implementó
+
+| Pieza | Estado |
+|---|---|
+| Sección `matriz-radar` y botón "RADAR" en la navegación | Implementada. El botón lleva el título "Radar Estratégico". El botón de exportar queda habilitado en RADAR. `"RADAR"` es el noveno valor de `MATRICES`. |
+| `ESTRUCTURA_RADAR` | Una sola constante con los 14 componentes en el orden de las puntas (etapa, posición, cantidad de características, y los índices planos `desde` y `hasta` derivados de esas cantidades). De ella salen los rangos de índice, el nombre de cada punta ("Movilización 1", "Alineamiento 2"...), los mensajes de error y la hoja "Resultados". La tabla de índices no está escrita a mano en ningún otro lugar del código. Se acompaña de `ETAPAS_RADAR` (nombre, descripción corta y características por componente de cada etapa) y de `ESCALA_RADAR` (los seis niveles). |
+| `formularioRadar` | Las 56 entradas agrupadas por componente y, estas, por etapa, con el helper `entrada()` y `data-campo="calificaciones.i"` (índice plano). Antes de las etapas, un aviso de que la escala está invertida y la lista de los seis niveles. No hay ningún botón "+" ni "−". |
+| `erroresRadar` y `validar('RADAR')` | Revisa solo el rango (enteros de 0 a 5, con `validarRango`) de las calificaciones que tienen valor. Empuja un mensaje por característica fuera de rango, con el nombre de su componente y su posición dentro de él ("Traducción 2, característica 3: debe ser un número entero entre 0 y 5."), y devuelve los índices planos. `validar` los devuelve en la propiedad extra `indicesInvalidos`, solo para RADAR, y no llama a `validarCamposVacios` para esta matriz. |
+| `calcularRadar` | Devuelve el arreglo de 14 posiciones `{ estado, puntaje }` con los cuatro estados por componente, de forma independiente. El puntaje es el promedio sin redondear de las calificaciones del componente, con su propia cantidad de características como divisor. |
+| `dibujarRadar` | SVG con la misma técnica de BCG, PEYEA y AE (`svg()` y `texto()`): 14 puntas desde arriba y en sentido horario, cinco anillos (1 a 5), el eje fijo de 0 en el centro a 5 en el borde, cada punta rotulada "<Etapa> <posición>", y un punto con su puntaje solo donde el estado es "completo". Los puntos no se unen con una línea. Debajo, tres líneas que recuerdan la escala invertida. |
+| `resultadosRadar` | Tabla de 14 filas (Etapa, Componente, Estado, Puntaje), con el puntaje a dos decimales solo en los completos, y una nota. |
+| Flujo genérico (decisión C) | `evaluarMatriz`, `actualizarMatriz` y `exportarActiva` ajustados para que un componente incompleto o inválido no bloquee el módulo. Ver el punto 2. |
+| Persistencia | `estadoVacio` trae `RADAR` con 56 `null`. `cargar()` completa `datos.RADAR` con 56 `null` si un estado guardado anterior no lo trae o lo trae dañado, y conserva los demás datos. Sin cambio de versión del formato. |
+| Exportador | Rama `"RADAR"` con las hojas "Datos" y "Resultados". Ver el punto 3. |
+| Pruebas | `tests/elaboration1.test.js`: pruebas RE.1 a RE.11, más la comprobación X.7 del Exportador de RADAR. |
+
+### 2. Forma final de `ResultadoRadar` y ajuste del flujo genérico
+
+La forma que devuelve `calcularRadar` no cambió respecto de Construction I: un arreglo de 14 posiciones `{ estado, puntaje }`, con `estado` en `"completo"`, `"incompleto"`, `"vacío"` o `"inválido"` y `puntaje: null` salvo en los completos. Lo que se precisó:
+
+- El segundo parámetro, `errores`, conserva ese nombre para no romper la firma, pero contiene los índices planos de las características fuera de rango, no mensajes. Está documentado en un comentario sobre el método.
+- Un componente con una característica fuera de rango es "inválido" aunque el resto de sus características esté sin calificar.
+- `dibujarRadar` solo recorre el arreglo y dibuja un punto donde `estado` es "completo": no vuelve a decidir nada.
+
+El flujo genérico de las otras ocho matrices da por hecho que la matriz es válida o inválida como un todo, y por eso no servía para RE.2, RE.3, RE.9 y RE.10. Se aplicaron los tres cambios puntuales de la decisión C sobre código ya existente, más el mismo ajuste en `exportarActiva`:
+
+1. En `Validador.validar`, la llamada a `validarCamposVacios` exceptúa también a RADAR, igual que ya exceptuaba a AE con `celdasFueraDeDiagonalAE`.
+2. En `evaluarMatriz`, `hayCalificacionesRadar` decide el estado "vacía"; el corte `if (!validacion.valido)` exceptúa a RADAR (nunca es "invalida", siempre sigue al cálculo); se agrega el caso `'RADAR'` y el `return` final usa siempre `validacion.errores` (en las otras ocho matrices es `[]` en ese punto, así que no cambia nada para ellas).
+3. En `actualizarMatriz`, `Vista.mostrarErrores([])` pasa a `Vista.mostrarErrores(evaluacion.errores)` y se agrega `dibujarRadar` a la cadena de dibujo. `exportarActiva` hace el mismo cambio antes de llamar al Exportador.
+
+Consecuencia: un módulo RADAR con calificaciones es siempre de estado "ok". Los errores de los componentes inválidos viajan en `evaluacion.errores` junto al resultado, y la pantalla los muestra sin dejar de calcular y dibujar los otros componentes.
+
+### 3. Estructura del Excel exportado (cierra el escenario RE-4)
+
+Decisión del juez: dos hojas, "Datos" y "Resultados", archivo `Mtx-RADAR.xlsx` (el nombre sale de la lógica genérica). En "Datos", 56 filas (Etapa, Componente, Característica, Calificación), con la calificación vacía si no se calificó y el valor tal cual si está fuera de rango. En "Resultados", 14 filas (Etapa, Componente, Estado, Puntaje), con el estado real de cada componente, "Inválido" incluido, y el puntaje solo en los "Completo". Solo se agregó la rama `"RADAR"` a `hojasExportacion`; la firma de `Exportador.exportarXLSX` no cambia.
+
+La exportación no se bloquea por componentes incompletos, vacíos o inválidos: se puede exportar en cualquier estado del módulo que no sea "vacía" (el mismo criterio que ya aplicaba `exportarActiva` de forma genérica). Esto se aparta de la redacción original del escenario RE-4 de Elaboration II ("si hay un valor fuera de rango, la Vista muestra el error y no llama al Exportador"), escrita antes de que Construction I resolviera que en este módulo la invalidez es por componente. Un commit de sincronización aparte actualiza esa frase.
+
+### 4. Criterios aplicados donde las fases anteriores no fijaban un valor
+
+- **Estado limpio:** `datos.RADAR` empieza con 56 `null`.
+- **Control de calificación:** el helper `entrada()` ya existente, un campo de texto, sin crear un control nuevo (cierra el punto 3 de los [VERIFICAR] de Construction I). Ese helper marca el campo con `inputmode="decimal"`, no `numeric`; no se cambió para no tocar un helper compartido por las demás matrices.
+- **Calificación borrada:** el formulario guarda lo que escribe el estudiante, así que una calificación borrada queda como texto vacío y no como `null`. Para todo el código ambos valen "sin calificar" (`esVacio`).
+- **Forma de los errores:** un mensaje de texto por característica, en el arreglo compartido de errores, y los índices planos aparte, como valor de retorno (cierra el punto 1 de los [VERIFICAR] de Construction I).
+- **Redondeo:** el puntaje no se redondea nunca internamente; los dos decimales son solo de presentación en la tabla, en el rótulo de cada punto y en el título que sale al pasar el mouse (cierra el punto 2 de los [VERIFICAR] de Construction I).
+- **Calificaciones con decimales:** se rechazan (por ejemplo 2.5), como en AE, EFI, EFE y MPC. Sigue abierto el punto 3 de los [VERIFICAR] de Elaboration I de este módulo.
+- **Texto de las afirmaciones:** las 56 afirmaciones del profesor no están en este repositorio, así que cada característica se rotula "Característica 1", "Característica 2"... dentro de su componente. Los nombres de las etapas y de los componentes ("Movilización 1") y la descripción corta de cada etapa sí salen de la estructura verificada en Inception.
+- **Módulo vacío:** con ninguna característica calificada no se muestra ni la tabla ni el radar, solo la pista genérica de las demás matrices ("Complete o corrija los datos para ver el resultado."), y no hay ningún error. El aspecto del radar vacío seguía abierto desde Elaboration I.
+- **Componente incompleto frente a vacío:** la interfaz solo los distingue por la columna "Estado" de la tabla. Ninguno tiene punto, puntaje ni error.
+- **Radar:** la primera punta va arriba y el orden sigue el sentido horario; los puntos no se unen con una línea, porque unir solo los componentes completos dibujaría una figura engañosa cuando faltan puntas.
+- **Textos de lectura invertida:** el aviso va en el formulario, en la nota de la tabla de resultados y en tres líneas dentro del SVG (RE.6). La redacción es libre; solo el contenido es el de la prueba.
+- **Persistencia:** `cargar()` considera válido un `RADAR` con exactamente 56 posiciones, cada una `null`, número o texto. No revisa el rango: un valor fuera de rango se conserva y lo marca el Validador.
+
+### 5. Verificación
+
+Comando: `node tests/elaboration1.test.js`. Resultado de la última corrida: 44 de 44 comprobaciones correctas (las 32 anteriores, que incluyen la X.1 contra el diagrama de clases con `calcularRadar` y `dibujarRadar`, más RE.1 a RE.11 y X.7). Antes de implementar los dos métodos nuevos, la X.1 era la única que fallaba, porque el diagrama de Elaboration II ya los declaraba. Con tres fallos introducidos a propósito en una copia fuera del repositorio (divisor fijo de 4 en el promedio, `validarCamposVacios` aplicado también a RADAR y eje del gráfico ajustado al máximo observado), fallaron 7, 5 y 1 comprobaciones, respectivamente.
+
+Las pruebas que dependen del dibujo y del formulario (RE.4 a RE.7) no tienen navegador. Para que no queden sin verificar, el arnés usa un DOM simulado mínimo y comprueba la estructura de lo que generan `dibujarRadar` y `formularioRadar`: cuántos puntos hay, a qué fracción del radio, sobre qué punta, qué rótulos, cuántos campos y cuántos botones. No comprueba cómo se ve en pantalla. La tabla de índices de esas pruebas está transcrita de Elaboration I, sin derivarla de la aplicación, para comprobar la aplicación contra ella.
+
+Además se recorrió el módulo en el navegador integrado del escritorio de Claude, con una copia servida desde un servidor temporal fuera del repositorio (ya detenido) y eventos reales del DOM: escribir las calificaciones de RE.1 (cuatro puntos), un componente incompleto, un valor 7 fuera de rango (mensaje "Alineamiento 2, característica 1", componente "Inválido" y los otros cuatro puntos intactos), 56 campos y ningún botón "+" ni "−", recarga con los valores y la matriz activa conservados, y volver a BCG. Los rótulos del radar caben dentro del recuadro del SVG. Sin errores de consola. No se pudo tomar una captura de pantalla (la ventana estaba minimizada) ni se pulsó "Exportar a Excel" para no descargar archivos; el contenido del archivo lo cubre X.7.
+
+### 6. Qué queda para Construction III
+
+- El resultado visual real de `dibujarRadar` (si los 14 rótulos se leen sin pisarse, el aspecto de los puntos y los anillos, el radar con muy pocos puntos) y el aspecto del formulario con sus 56 campos.
+- La usabilidad de escribir 56 calificaciones: orden de tabulación, y si conviene un control distinto de un campo de texto.
+- El texto de las 56 afirmaciones del profesor, que hoy no está en la pantalla.
+- La apertura del archivo `Mtx-RADAR.xlsx` en un programa de hojas de cálculo, con componentes incompletos e inválidos.
+- Navegadores distintos de Chrome y el archivo descargado de internet: nada de esto se verificó en esta fase.
