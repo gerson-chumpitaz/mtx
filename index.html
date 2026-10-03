@@ -43,7 +43,10 @@
       #matriz-radar:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) 36rem; grid-template-areas: "titulo titulo" "formulario panel" "resultados resultados"; column-gap: 1.5rem; align-items: start; }
       #matriz-radar > h2 { grid-area: titulo; }
       #matriz-radar > .formulario { grid-area: formulario; }
-      #matriz-radar > .panel-radar { grid-area: panel; position: sticky; top: 0.75rem; max-height: calc(100vh - 1.5rem); overflow-y: auto; }
+      #matriz-radar > .panel-radar { grid-area: panel; position: sticky; top: 0.75rem; }
+      #matriz-radar .panel-radar .errores { max-height: 30vh; overflow-y: auto; }
+      #matriz-radar .panel-radar .grafico svg { max-height: calc(100vh - 2.5rem); }
+      #matriz-radar .panel-radar:has(.errores ul) .grafico svg { max-height: calc(70vh - 2.5rem); }
       #matriz-radar > .resultados { grid-area: resultados; }
     }
     #matriz-radar .grafico svg { max-width: 36rem; margin-left: auto; margin-right: auto; }
