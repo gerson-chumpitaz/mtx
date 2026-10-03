@@ -401,7 +401,7 @@ classDiagram
         +ubicarMIE(totalEFI, totalEFE) ResultadoMIE
         +ubicarGE(ejes) ResultadoGE
         +calcularAE(variables, matriz) ResultadoAE
-        +calcularRadar(calificaciones) ResultadoRadar
+        +calcularRadar(calificaciones, errores) ResultadoRadar
     }
     class MotorGraficos {
         +dibujarBCG(resultado)
@@ -2473,7 +2473,7 @@ Este escenario cubre las pruebas RE.2 y RE.3. [VERIFICAR] si el filtro que deja 
 
 **Escenario RE-3: calificación fuera de rango**
 
-El estudiante escribe, o llega al sistema, una calificación fuera de 0 a 5 en una característica (por ejemplo 6) del componente 1 de Movilización, como en la prueba RE.10. La Vista guarda el estado en la Persistencia, sin perder el valor escrito, y pasa las calificaciones al Validador, que detecta el valor fuera de rango y devuelve un error asociado a ese componente. La Vista muestra el error. Ese componente queda "inválido": no se calcula y no tiene punto. Los otros trece componentes no se ven afectados: la Vista sigue pasando sus calificaciones al Motor de Cálculo y al Motor de Gráficos, y los componentes completos mantienen su puntaje y su punto. Es la diferencia con los módulos anteriores, donde un error de validación corta todo el flujo.
+El estudiante escribe, o llega al sistema, una calificación fuera de 0 a 5 en una característica (por ejemplo 6) del componente 1 de Movilización, como en la prueba RE.10. La Vista guarda el estado en la Persistencia, sin perder el valor escrito, y pasa las 56 calificaciones al Validador, que detecta el valor fuera de rango con `erroresRadar` y devuelve el error asociado a esa característica. La Vista pasa las 56 calificaciones y esos errores al Motor de Cálculo con `calcularRadar(calificaciones, errores)`, que marca ese componente como "inválido" sin calcularlo, y calcula normalmente los otros trece. La Vista muestra el error del componente inválido. El Motor de Gráficos no dibuja su punto, pero sí el de los componentes completos, que mantienen su puntaje. Es la diferencia con los módulos anteriores, donde un error de validación corta todo el flujo.
 Componentes: Vista, Persistencia, Validador, Motor de Cálculo, Motor de Gráficos.
 Este escenario cubre la prueba RE.10. [VERIFICAR] cómo se excluye el componente inválido del cálculo: si el Validador devuelve los errores por componente y la Vista le pasa al Motor de Cálculo solo los componentes sin error, o si `calcularRadar` reconoce el estado "inválido" por sí mismo. Se decide en Construction I, junto con la pregunta abierta del Validador de la tabla de arriba.
 
@@ -2568,9 +2568,9 @@ sequenceDiagram
     U->>V: escribe una calificación fuera de 0 a 5
     V->>P: guardar(estado)
     V->>VA: validar(RADAR, datos)
-    VA-->>V: error de rango en un componente
-    V->>MC: calcularRadar(calificaciones de los demás componentes)
-    MC-->>V: estado y puntaje de los demás componentes
+    VA-->>V: error de rango en una característica
+    V->>MC: calcularRadar(calificaciones, errores)
+    MC-->>V: ese componente "inválido", estado y puntaje de los demás
     V->>MG: dibujarRadar(resultado)
     MG-->>V: radar sin punto para el componente inválido
     V-->>U: muestra el error de ese componente y el radar de los demás
