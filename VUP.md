@@ -1,6 +1,6 @@
 # Mtx: Documento VUP (Vibe Unified Process)
 
-Estado: los Módulos 1 (Matrices de Combinación) y 2 (Análisis Estructural) completaron las siete fases de VUP y están publicados en https://gerson-chumpitaz.github.io/mtx/. El Módulo 3 (Radar Estratégico) completó las seis primeras fases, de Inception a Construction III, y su Transition, que es la publicación y la verificación en la dirección real, está pendiente. Los módulos que siguen, según el orden acordado (Priorización de Iniciativas y PE-BSC), no han empezado.
+Estado: los Módulos 1 (Matrices de Combinación), 2 (Análisis Estructural) y 3 (Radar Estratégico) completaron las siete fases de VUP y están publicados en https://gerson-chumpitaz.github.io/mtx/. Los módulos que siguen, según el orden acordado (Priorización de Iniciativas y PE-BSC), no han empezado.
 Referencia del proceso: https://vibeprocess.org/ (Vibe Unified Process, Dr. Michael Dorin, University of St. Thomas), adaptado de Jacobson, Booch y Rumbaugh (1999), El Proceso Unificado de Desarrollo de Software.
 
 Flujo de trabajo acordado: este documento y el código viven en esta carpeta local. Claude Code trabaja aquí como constructor (fases de Elaboration II en adelante). La sesión de Cowork del Project "Prompt Engineering" en claude.ai actúa como juez, lee este mismo documento y el código a través del puente con la computadora, aplica los prompts de revisión de rol de VUP (Product Owner, QA, Arquitecto, Desarrollador) y documenta qué se acepta o se rechaza antes de desbloquear la siguiente fase.
