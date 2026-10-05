@@ -3171,3 +3171,68 @@ Puntos [VERIFICAR] nuevos:
 5. **Quién ejecuta este plan, con qué frecuencia y cómo se registran los fallos:** igual que el punto 5 de la Construction III del Módulo 1.
 6. **Uso en celular.** Si el curso necesita usar el módulo en un celular. Mientras no haya requisito no hay casos.
 7. Siguen abiertos los puntos de las fases anteriores de este módulo: el título repetido de los dos componentes de Alineamiento, la afirmación repetida de Motivación 3 y Gestión 1 y las erratas del texto del profesor (ver "Puntos [VERIFICAR] para el profesor" en Construction II), y las calificaciones con decimales (el 2.5 se rechaza, como en AE, EFI, EFE y MPC).
+
+## Transition — Módulo 3: Radar Estratégico
+
+Objetivo de la fase: publicar Radar Estratégico, verificarlo en su dirección real y cerrar el ciclo VUP de este módulo. El resumen del código y la lista consolidada de [VERIFICAR] para el profesor no se repiten aquí: se actualizaron dentro del "## Transition" del Módulo 1, partes 3 y 4, porque describen el archivo completo. Esta fase no cambió `index.html` ni `tests/`, y no resolvió ningún punto [VERIFICAR]: solo publica y enumera.
+
+### 1. Configuración de despliegue
+
+No hay nada nuevo que configurar. El sitio de GitHub Pages ya existe (ver la parte 1 del Transition del Módulo 1: URL https://gerson-chumpitaz.github.io/mtx/, rama `master`, carpeta raíz, publicación por rama, HTTPS forzado) y se vuelve a publicar solo con cada `git push` a `master`.
+
+Lo que se hizo en este módulo:
+
+1. Se subieron los commits del módulo a `master`. El primer intento de push falló por red: la red de la universidad bloqueaba GitHub (`Failed to connect to github.com:443`). Se resolvió cambiando de red, y con la nueva el push funcionó. El último push fue `0351d41..5085ad3`: incluyó los 19 commits del módulo (de Inception a Construction III) y los dos primeros commits de documentación de esta fase (`a239719` y `5085ad3`), 21 commits en total. `45d963a` es el último commit que modificó `index.html`.
+2. Se esperó la publicación consultando cada 15 segundos, con el mismo método del Módulo 1, hasta que el estado pasó de `building` a `built` (poco más de un minuto):
+
+```bash
+gh api repos/gerson-chumpitaz/mtx/pages/builds/latest
+```
+
+   La respuesta final trajo `status` = `built` y `commit` = `5085ad3` (completo: `5085ad30ac8278533d4635c6d3df80c328900f91`), con una duración de 72 segundos según la propia API.
+3. Se comprobó que el archivo servido es idéntico al del repositorio. Se descargó en bruto el contenido de https://gerson-chumpitaz.github.io/mtx/ (respuesta HTTP 200) y se comparó, byte por byte, con `git show 45d963a:index.html`: el SHA-256 de los dos es `4879587e93566f9981267f8b6278bb4a2d047da8ae8dee62b0caf8eaef5efc6c` (1 068 084 bytes). `VUP.md` también queda servido en la misma dirección, como ya advertía el Módulo 1.
+
+Los commits de documentación restantes de esta fase solo cambian `VUP.md`: al subirlos Pages vuelve a publicar, con el mismo `index.html`.
+
+### 2. Resultado de la verificación en la URL real
+
+Se abrió https://gerson-chumpitaz.github.io/mtx/ en el navegador integrado de la aplicación (Chromium), se partió de un estado limpio (`localStorage.removeItem('mtx.estado')`) y se recorrió RADAR con eventos del DOM. Las 56 calificaciones de D-RA2 y de D-RA3 (los conjuntos de datos de la Construction III de este módulo) se escribieron con un evento de entrada en cada campo, en el orden de los índices planos 0 a 55, y los valores `null` se dejaron vacíos. Los valores de la tabla se midieron en el navegador. La ventana se fijó en 1366 por 768 y en 1280 por 720, y se registraron `innerWidth` e `innerHeight` reales en cada medición.
+
+| Comprobación | Resultado |
+|---|---|
+| 1. Navegación | Nueve botones, en este orden: BCG, EFI, EFE, MPC, PEYEA, MIE, GE, AE y RADAR. Al abrir está resaltado BCG. El botón RADAR tiene el texto emergente "Radar Estratégico" (atributo `title`). |
+| 2. Estado limpio de RADAR | 56 campos con `data-campo` desde `calificaciones.0` hasta `calificaciones.55`, en ese orden. La zona de resultados dice "Complete o corrija los datos para ver el resultado." No hay recuadro rojo (0 mensajes) ni ningún elemento `svg`. |
+| 3. D-RA2 completo | Ventana de 1366 por 768. La tabla trae 14 filas "Completo" con los puntajes 2.00, 0.75, 4.25, 2.60, 1.25, 2.33, 4.75, 0.25, 3.00, 1.75, 4.50, 0.50, 2.75 y 1.50, en el orden de las puntas. El SVG tiene 14 elementos `circle.punto-radar` y 14 números de puntaje. Con el cuadro real de cada texto y de cada punto (`getBBox`): 0 pares texto con texto, 0 pares número de puntaje con punto, 1 par dígito de la escala con punto (el "0" de la escala con el punto de Gestión 1, 0.50) y 0 elementos fuera del `viewBox`. |
+| 4. D-RA3 | Estados: Movilización 1 Completo 1.00; Movilización 2 Incompleto; Movilización 3 Vacío; Traducción 1 Inválido; Traducción 2 Inválido; Traducción 3, Alineamiento 1 y Alineamiento 2 Vacío; Motivación 1 Inválido; Motivación 2, Motivación 3, Gestión 1 y Gestión 2 Vacío; Gestión 3 Completo 0.00. El recuadro rojo trae tres mensajes, en este orden: "Traducción 1, característica 3: debe ser un número entero entre 0 y 5.", "Traducción 2, característica 1: debe ser un número entero entre 0 y 5." y "Motivación 1, característica 2: debe ser un número entero entre 0 y 5." El gráfico tiene 2 puntos, con los textos emergentes "Movilización 1: 1.00" y "Gestión 3: 0.00". |
+| 5. Disposición | A 1366 por 768 (`innerWidth` 1366, `innerHeight` 768): `display` de `#matriz-radar` igual a `grid`, `.panel-radar` con `position: sticky`, sin desborde horizontal (`scrollWidth` y `clientWidth` de 1351). Con la página desplazada 2000 px y D-RA2 el panel quedó entre 12 y 613 px de la ventana y el SVG mide 576 por 585 px; con D-RA3 el panel quedó entre 12 y 635 px y el SVG, escalado hacia abajo, mide 490 por 498 px. A 1280 por 720 (`innerWidth` 1280, `innerHeight` 720): `grid`, `sticky`, sin desborde (1265 y 1265); con D-RA2 el panel quedó entre 12 y 613 px y el SVG mide 576 por 585 px; con D-RA3 el panel quedó entre 12 y 601 px y el SVG mide 457 por 464 px. En todos los casos el borde superior del panel es mayor o igual a 0 y el inferior menor o igual a `innerHeight`. |
+| 6. Exportación (se reemplazó `XLSX.writeFile` para guardar el libro, sin descargar ningún archivo) | Con D-RA2: nombre `Mtx-RADAR.xlsx`; hoja "Datos" con 56 filas más el encabezado (Etapa, Componente, Característica, Afirmación, Calificación); hoja "Resultados" con 14 filas más el encabezado (Etapa, Componente, Título del componente, Estado, Puntaje); 0 celdas de tipo error. Con D-RA3: la exportación no se bloquea (se genera el libro y siguen los tres mensajes en pantalla); E35 de "Datos" (la calificación "abc") es de tipo texto con el valor "abc"; E16 es numérica con 6; E19 es numérica con 2.5; 0 celdas de tipo error en las dos hojas. |
+| 7. Persistencia | Con D-RA2 cargado y tras recargar la URL, sigue abierta la sección RADAR, los 56 campos conservan los valores de D-RA2, la tabla trae los 14 puntajes de la comprobación 3 y el gráfico tiene 14 puntos. |
+| 8. Las otras ocho secciones | Con la ventana en 1366 por 768, el ancho de `main` mide 1024 px en BCG, EFI, EFE, MPC, PEYEA, MIE, GE y AE, tanto antes como después de visitar RADAR (en una carga que abrió en BCG); en RADAR mide 1351 px. Con los datos de la prueba 1.1 del BCG (cuatro divisiones A, B, C y D): Estrella, Interrogante, Vaca lechera y Perro; porcentajes de ingresos 50.00, 30.00, 15.00 y 5.00; porcentajes de utilidades 50.00, 15.00, 30.00 y 5.00; totales de ingresos 1000.00 y de utilidades 200.00; 4 burbujas, sin recuadro rojo. Con los datos de la prueba AE.1 (Clima, Precio, Costos y Demanda): 12 celdas editables y 4 de diagonal; "Corte de motricidad (eje Y): 4.00. Corte de dependencia (eje X): 4.00."; filas V1 (Clima), 8.00, 1.00, INDEPENDIENTES, 3.50, 4.95; V2 (Precio), 7.00, 7.00, AMBIGUAS, 0.00, 0.00; V3 (Costos), 1.00, 2.00, AUTONOMAS, -0.50, 0.71; V4 (Demanda), 2.00, 8.00, DEPENDIENTES, -3.00, 4.24; 4 puntos en el gráfico. Coinciden con lo que esperan esas dos pruebas. |
+| 9. Consola y red | Sin errores ni advertencias. Un capturador de `console.error`, de `console.warn` y del evento `error` de la ventana, instalado después de cada carga, quedó con 0 entradas durante todo el recorrido, y la consola del navegador estaba vacía también tras la última recarga. Las solicitudes de red fueron 5, todas `GET https://gerson-chumpitaz.github.io/mtx/` con HTTP 200 (la carga inicial y cuatro recargas, una solicitud por carga). No hubo ningún recurso externo ni pedido de favicon. |
+| 10. Estado final | Al terminar se borró `mtx.estado` del origen: `localStorage.getItem('mtx.estado')` devuelve `null` y no queda ninguna clave. |
+
+Qué no se verificó: la URL solo se probó en el navegador integrado (no en Chrome, Edge ni Firefox por separado ni en un teléfono); los datos se escribieron con eventos simulados y no con el teclado; la exportación se validó leyendo el libro generado, no abriéndolo en un programa de hojas de cálculo (no se descargó ningún archivo); las otras ocho secciones se comprobaron solo con AE.1 y la prueba 1.1 del BCG, y con la medición del ancho de `main`; y el plan de pruebas manual de este módulo (CP-78 a CP-130) no se ha ejecutado con una persona.
+
+### 3. Reflexión
+
+Preguntas de VUP para responder a mano. No las respondió la IA.
+
+**1. ¿Qué fue lo más importante de la especificación?**
+
+Respuesta:
+
+**2. ¿Qué harías distinto?**
+
+Respuesta:
+
+**3. ¿Qué te sorprendió de cómo la IA implementó los requisitos?**
+
+Respuesta:
+
+**4. ¿Cómo ayudó tener un plan de pruebas claro?**
+
+Respuesta:
+
+**5. ¿Qué agregarías si siguieras desarrollando el proyecto?**
+
+Respuesta:
