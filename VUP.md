@@ -3182,7 +3182,7 @@ No hay nada nuevo que configurar. El sitio de GitHub Pages ya existe (ver la par
 
 Lo que se hizo en este módulo:
 
-1. Se subieron los commits del módulo a `master`. El primer intento de push falló por red: la red de la universidad bloqueaba GitHub (`Failed to connect to github.com:443`). Se resolvió cambiando de red, y con la nueva el push funcionó. El último push fue `0351d41..5085ad3`: incluyó los 19 commits del módulo (de Inception a Construction III) y los dos primeros commits de documentación de esta fase (`a239719` y `5085ad3`), 21 commits en total. `45d963a` es el último commit que modificó `index.html`.
+1. Se subieron los commits del módulo a `master`. El primer intento de push falló por red: la red de la universidad bloqueaba GitHub (`Failed to connect to github.com:443`). Se resolvió cambiando de red, y con la nueva el push funcionó. El último push fue `0351d41..5085ad3`: incluyó los 19 commits de Construction II y Construction III de este módulo (Inception, Elaboration I y II y Construction I ya estaban publicados) y los dos primeros commits de documentación de esta fase (`a239719` y `5085ad3`), 21 commits en total. `45d963a` es el último commit que modificó `index.html`.
 2. Se esperó la publicación consultando cada 15 segundos, con el mismo método del Módulo 1, hasta que el estado pasó de `building` a `built` (poco más de un minuto):
 
 ```bash
